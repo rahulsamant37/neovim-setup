@@ -4,6 +4,9 @@ return {
   {
     'goerz/jupytext.nvim',
     version = '0.2.0',
+    enabled = function()
+      return vim.fn.executable 'jupytext' == 1
+    end,
     opts = {
       format = 'markdown',
       autosync = true,

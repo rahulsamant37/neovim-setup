@@ -23,6 +23,11 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+local user_bin = vim.fn.expand '~/.local/bin'
+if vim.fn.isdirectory(user_bin) == 1 and not vim.env.PATH:find(user_bin, 1, true) then
+  vim.env.PATH = user_bin .. ':' .. vim.env.PATH
+end
+
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
 
@@ -175,6 +180,7 @@ end
 ---@type vim.Option
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
+rtp:append(vim.fn.stdpath 'data' .. '/site')
 
 -- [[ Configure and install plugins ]]
 --
