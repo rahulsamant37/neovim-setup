@@ -909,7 +909,7 @@ local function run_cpp_file()
   source_file = vim.fn.fnamemodify(source_file, ':p')
   local source_dir = vim.fn.fnamemodify(source_file, ':h')
   local source_base = vim.fn.fnamemodify(source_file, ':t:r')
-  local binary_path = source_dir .. '/' .. source_base
+  local binary_path = vim.fn.tempname() .. '_' .. source_base
   local input_file = source_dir .. '/input.txt'
   local compile_output = vim.fn.tempname() .. '.gpp.err'
 
@@ -946,8 +946,10 @@ local function run_cpp_file()
   local run_cmd = vim.fn.shellescape(binary_path)
   if vim.fn.filereadable(input_file) == 1 then run_cmd = run_cmd .. ' < ' .. vim.fn.shellescape(input_file) end
 
+  local run_script = run_cmd .. '; code=$?; rm -f ' .. vim.fn.shellescape(binary_path) .. '; exit $code'
+
   vim.cmd.vsplit()
-  vim.cmd('terminal ' .. run_cmd)
+  vim.cmd('terminal sh -c ' .. vim.fn.shellescape(run_script))
   vim.cmd.startinsert()
 end
 
