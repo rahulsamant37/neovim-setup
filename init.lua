@@ -895,5 +895,62 @@ vim.keymap.set('i', '<A-k>', '<Esc>:m .-2<CR>==gi', { silent = true })
 
 vim.keymap.set('v', '<A-j>', ":m '>+1<CR>gv=gv", { silent = true })
 vim.keymap.set('v', '<A-k>', ":m '<-2<CR>gv=gv", { silent = true })
+
+local function run_cpp_file()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local source_file = vim.api.nvim_buf_get_name(bufnr)
+  if source_file == '' then
+    vim.notify('RunCpp: save the file before compiling.', vim.log.levels.WARN)
+    return
+  end
+
+  if vim.bo[bufnr].modified then vim.cmd.write() end
+
+  source_file = vim.fn.fnamemodify(source_file, ':p')
+  local source_dir = vim.fn.fnamemodify(source_file, ':h')
+  local source_base = vim.fn.fnamemodify(source_file, ':t:r')
+  local binary_path = source_dir .. '/' .. source_base
+  local input_file = source_dir .. '/input.txt'
+  local compile_output = vim.fn.tempname() .. '.gpp.err'
+
+  local compile_cmd = string.format(
+    'g++ -std=c++23 -O2 -Wall -Wextra %s -o %s 2>%s',
+    vim.fn.shellescape(source_file),
+    vim.fn.shellescape(binary_path),
+    vim.fn.shellescape(compile_output)
+  )
+
+  vim.fn.system(compile_cmd)
+  local compile_exit = vim.v.shell_error
+
+  if vim.fn.filereadable(compile_output) == 1 then
+    local lines = vim.fn.readfile(compile_output)
+    vim.fn.delete(compile_output)
+    if compile_exit ~= 0 then
+      vim.fn.setqflist({}, 'r', {
+        title = 'RunCpp: g++ errors',
+        lines = lines,
+        efm = '%f:%l:%c: %trror: %m,%f:%l:%c: %tarning: %m,%f:%l:%c: %tnote: %m,%f:%l: %trror: %m,%f:%l: %tarning: %m,%f:%l: %tnote: %m,%f:%l:%c: %m,%f:%l: %m',
+      })
+      vim.cmd.copen()
+      vim.notify('RunCpp: compilation failed. See quickfix list.', vim.log.levels.ERROR)
+      return
+    end
+  elseif compile_exit ~= 0 then
+    vim.notify('RunCpp: compilation failed, but no compiler output was captured.', vim.log.levels.ERROR)
+    return
+  end
+
+  vim.cmd.cclose()
+
+  local run_cmd = vim.fn.shellescape(binary_path)
+  if vim.fn.filereadable(input_file) == 1 then run_cmd = run_cmd .. ' < ' .. vim.fn.shellescape(input_file) end
+
+  vim.cmd.vsplit()
+  vim.cmd('terminal ' .. run_cmd)
+  vim.cmd.startinsert()
+end
+
+vim.api.nvim_create_user_command('R', run_cpp_file, { desc = 'Compile and run current C++ file' })
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
