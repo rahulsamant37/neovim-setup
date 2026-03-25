@@ -27,17 +27,8 @@ return {
   {
     'benlubas/molten-nvim',
     version = '^1.0.0',
+    lazy = false,
     build = ':UpdateRemotePlugins',
-    cmd = {
-      'MoltenInit',
-      'MoltenInfo',
-      'MoltenEvaluateLine',
-      'MoltenEvaluateVisual',
-      'MoltenReevaluateCell',
-      'MoltenDelete',
-      'MoltenHideOutput',
-      'MoltenEnterOutput',
-    },
     init = function()
       vim.g.molten_virt_text_output = true
       vim.g.molten_auto_open_output = false
