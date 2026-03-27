@@ -23,10 +23,11 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+local python_host = vim.fn.expand '~/.virtualenvs/neovim/bin/python3'
+if vim.fn.executable(python_host) == 1 then vim.g.python3_host_prog = python_host end
+
 local user_bin = vim.fn.expand '~/.local/bin'
-if vim.fn.isdirectory(user_bin) == 1 and not vim.env.PATH:find(user_bin, 1, true) then
-  vim.env.PATH = user_bin .. ':' .. vim.env.PATH
-end
+if vim.fn.isdirectory(user_bin) == 1 and not vim.env.PATH:find(user_bin, 1, true) then vim.env.PATH = user_bin .. ':' .. vim.env.PATH end
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
@@ -960,5 +961,6 @@ local function run_cpp_file()
 end
 
 vim.api.nvim_create_user_command('R', run_cpp_file, { desc = 'Compile and run current C++ file' })
+
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
