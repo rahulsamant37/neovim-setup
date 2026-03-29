@@ -145,6 +145,19 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
+vim.keymap.set('i', '<CR>', function()
+  local col = vim.fn.col '.'
+  local line = vim.api.nvim_get_current_line()
+
+  if col > 1 and col <= #line then
+    local prev = line:sub(col - 1, col - 1)
+    local next = line:sub(col, col)
+
+    if prev == '{' and next == '}' then return vim.api.nvim_replace_termcodes('<CR><C-o>O', true, true, true) end
+  end
+
+  return vim.api.nvim_replace_termcodes('<CR>', true, true, true)
+end, { expr = true, desc = 'Expand braces on Enter' })
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
 -- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
