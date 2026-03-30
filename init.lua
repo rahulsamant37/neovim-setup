@@ -910,6 +910,16 @@ vim.keymap.set('i', '<A-k>', '<Esc>:m .-2<CR>==gi', { silent = true })
 vim.keymap.set('v', '<A-j>', ":m '>+1<CR>gv=gv", { silent = true })
 vim.keymap.set('v', '<A-k>', ":m '<-2<CR>gv=gv", { silent = true })
 
+-- Duplicate current line / selection with alt + shift + arrow keys
+vim.keymap.set('n', '<A-S-Down>', ':t.<CR>==', { silent = true, desc = 'Duplicate line down' })
+vim.keymap.set('n', '<A-S-Up>', ':t-1<CR>==', { silent = true, desc = 'Duplicate line up' })
+
+vim.keymap.set('i', '<A-S-Down>', '<Esc>:t.<CR>==gi', { silent = true, desc = 'Duplicate line down' })
+vim.keymap.set('i', '<A-S-Up>', '<Esc>:t-1<CR>==gi', { silent = true, desc = 'Duplicate line up' })
+
+vim.keymap.set('v', '<A-S-Down>', ":t'><CR>gv=gv", { silent = true, desc = 'Duplicate selection down' })
+vim.keymap.set('v', '<A-S-Up>', ":t'<-1<CR>gv=gv", { silent = true, desc = 'Duplicate selection up' })
+
 local function run_cpp_file()
   local bufnr = vim.api.nvim_get_current_buf()
   local source_file = vim.api.nvim_buf_get_name(bufnr)
