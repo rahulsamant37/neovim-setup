@@ -977,7 +977,96 @@ local function run_cpp_file()
   vim.cmd.startinsert()
 end
 
-vim.api.nvim_create_user_command('R', run_cpp_file, { desc = 'Compile and run current C++ file' })
+local function run_java_file()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local source_file = vim.api.nvim_buf_get_name(bufnr)
+  if source_file == '' then
+    vim.notify('RunJava: save the file before compiling.', vim.log.levels.WARN)
+    return
+  end
+
+  if vim.bo[bufnr].modified then vim.cmd.write() end
+
+  source_file = vim.fn.fnamemodify(source_file, ':p')
+  local source_dir = vim.fn.fnamemodify(source_file, ':h')
+  local source_base = vim.fn.fnamemodify(source_file, ':t:r')
+  local input_file = source_dir .. '/input.txt'
+  local compile_output = vim.fn.tempname() .. '.javac.err'
+  local build_dir = vim.fn.tempname() .. '_java_build'
+
+  vim.fn.mkdir(build_dir, 'p')
+
+  local package_name = ''
+  local source_lines = vim.fn.readfile(source_file)
+  for _, line in ipairs(source_lines) do
+    local pkg = line:match('^%s*package%s+([%w_%.]+)%s*;')
+    if pkg then
+      package_name = pkg
+      break
+    end
+  end
+
+  local main_class = source_base
+  if package_name ~= '' then main_class = package_name .. '.' .. source_base end
+
+  local compile_cmd = string.format(
+    'javac -d %s %s 2>%s',
+    vim.fn.shellescape(build_dir),
+    vim.fn.shellescape(source_file),
+    vim.fn.shellescape(compile_output)
+  )
+
+  vim.fn.system(compile_cmd)
+  local compile_exit = vim.v.shell_error
+
+  if vim.fn.filereadable(compile_output) == 1 then
+    local lines = vim.fn.readfile(compile_output)
+    vim.fn.delete(compile_output)
+    if compile_exit ~= 0 then
+      vim.fn.setqflist({}, 'r', {
+        title = 'RunJava: javac errors',
+        lines = lines,
+        efm = '%f:%l:%c: %trror: %m,%f:%l:%c: %tarning: %m,%f:%l:%c: %tnote: %m,%f:%l: %trror: %m,%f:%l: %tarning: %m,%f:%l: %tnote: %m,%f:%l:%c: %m,%f:%l: %m',
+      })
+      vim.cmd.copen()
+      vim.notify('RunJava: compilation failed. See quickfix list.', vim.log.levels.ERROR)
+      vim.fn.delete(build_dir, 'rf')
+      return
+    end
+  elseif compile_exit ~= 0 then
+    vim.notify('RunJava: compilation failed, but no compiler output was captured.', vim.log.levels.ERROR)
+    vim.fn.delete(build_dir, 'rf')
+    return
+  end
+
+  vim.cmd.cclose()
+
+  local run_cmd = string.format('java -cp %s %s', vim.fn.shellescape(build_dir), vim.fn.shellescape(main_class))
+  if vim.fn.filereadable(input_file) == 1 then run_cmd = run_cmd .. ' < ' .. vim.fn.shellescape(input_file) end
+
+  local run_script = run_cmd .. '; code=$?; rm -rf ' .. vim.fn.shellescape(build_dir) .. '; exit $code'
+
+  vim.cmd.vsplit()
+  vim.cmd('terminal sh -c ' .. vim.fn.shellescape(run_script))
+  vim.cmd.startinsert()
+end
+
+local function run_source_file()
+  local ft = vim.bo.filetype
+  if ft == 'cpp' or ft == 'c' then
+    run_cpp_file()
+    return
+  end
+
+  if ft == 'java' then
+    run_java_file()
+    return
+  end
+
+  vim.notify('R: unsupported filetype: ' .. ft, vim.log.levels.WARN)
+end
+
+vim.api.nvim_create_user_command('R', run_source_file, { desc = 'Compile and run current C++/Java file' })
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
