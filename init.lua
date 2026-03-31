@@ -26,6 +26,12 @@ vim.g.maplocalleader = ' '
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
 
+-- Disable optional providers not needed in this setup.
+vim.g.loaded_python3_provider = 0
+vim.g.loaded_node_provider = 0
+vim.g.loaded_ruby_provider = 0
+vim.g.loaded_perl_provider = 0
+
 -- [[ Setting options ]]
 -- See `:help vim.o`
 -- NOTE: You can change these options as you wish!
@@ -188,7 +194,21 @@ end
 ---@type vim.Option
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
-rtp:append(vim.fn.stdpath 'data' .. '/site')
+
+-- nvim-treesitter health compares against stdpath('data')/site/ (with trailing slash).
+-- Keep this exact entry in runtimepath to avoid false-negative health errors.
+local treesitter_site_dir = vim.fn.stdpath 'data' .. '/site/'
+local function ensure_treesitter_site_in_rtp()
+  if not vim.list_contains(vim.api.nvim_list_runtime_paths(), treesitter_site_dir) then
+    vim.o.runtimepath = treesitter_site_dir .. ',' .. vim.o.runtimepath
+  end
+end
+ensure_treesitter_site_in_rtp()
+vim.api.nvim_create_autocmd('VimEnter', {
+  group = vim.api.nvim_create_augroup('kickstart-treesitter-rtp', { clear = true }),
+  once = true,
+  callback = ensure_treesitter_site_in_rtp,
+})
 
 -- [[ Configure and install plugins ]]
 --
@@ -252,6 +272,7 @@ require('lazy').setup({
 
   { -- Useful plugin to show you pending keybinds.
     'folke/which-key.nvim',
+    enabled = false,
     event = 'VimEnter',
     ---@module 'which-key'
     ---@type wk.Opts
@@ -431,20 +452,6 @@ require('lazy').setup({
     -- Main LSP Configuration
     'neovim/nvim-lspconfig',
     dependencies = {
-      -- Automatically install LSPs and related tools to stdpath for Neovim
-      -- Mason must be loaded before its dependents so we need to set it up here.
-      -- NOTE: `opts = {}` is the same as calling `require('mason').setup({})`
-      {
-        'mason-org/mason.nvim',
-        ---@module 'mason.settings'
-        ---@type MasonSettings
-        ---@diagnostic disable-next-line: missing-fields
-        opts = {},
-      },
-      -- Maps LSP server names between nvim-lspconfig and Mason package names.
-      'mason-org/mason-lspconfig.nvim',
-      'WhoIsSethDaniel/mason-tool-installer.nvim',
-
       -- Useful status updates for LSP.
       { 'j-hui/fidget.nvim', opts = {} },
     },
@@ -542,9 +549,8 @@ require('lazy').setup({
         end,
       })
 
-      -- Enable the following language servers
-      --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
-      --  See `:help lsp-config` for information about keys and how to configure
+      -- Enable language servers only when their executables are available.
+      -- See `:help lsp-config` for information about keys and configuration.
       ---@type table<string, vim.lsp.Config>
       local servers = {
         -- clangd = {},
@@ -558,10 +564,11 @@ require('lazy').setup({
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         -- ts_ls = {},
 
-        stylua = {}, -- Used to format Lua code
-
         -- Special Lua Config, as recommended by neovim help docs
-        lua_ls = {
+      }
+
+      if vim.fn.executable 'lua-language-server' == 1 then
+        servers.lua_ls = {
           on_init = function(client)
             if client.workspace_folders then
               local path = client.workspace_folders[1].name
@@ -587,22 +594,8 @@ require('lazy').setup({
           settings = {
             Lua = {},
           },
-        },
-      }
-
-      -- Ensure the servers and tools above are installed
-      --
-      -- To check the current status of installed tools and/or manually install
-      -- other tools, you can run
-      --    :Mason
-      --
-      -- You can press `g?` for help in this menu.
-      local ensure_installed = vim.tbl_keys(servers or {})
-      vim.list_extend(ensure_installed, {
-        -- You can add other tools here that you want Mason to install
-      })
-
-      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+        }
+      end
 
       for name, server in pairs(servers) do
         vim.lsp.config(name, server)
@@ -642,7 +635,7 @@ require('lazy').setup({
         end
       end,
       formatters_by_ft = {
-        lua = { 'stylua' },
+        lua = vim.fn.executable 'stylua' == 1 and { 'stylua' } or {},
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -743,7 +736,7 @@ require('lazy').setup({
       -- the rust implementation via `'prefer_rust_with_warning'`
       --
       -- See :h blink-cmp-config-fuzzy for more information
-      fuzzy = { implementation = 'lua' },
+      fuzzy = { implementation = 'prefer_rust' },
 
       -- Shows a signature help window while you type arguments for a function
       signature = { enabled = true },
@@ -826,6 +819,7 @@ require('lazy').setup({
     branch = 'main',
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter-intro`
     config = function()
+      require('nvim-treesitter').setup { install_dir = vim.fn.stdpath 'data' .. '/site/' }
       local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
       require('nvim-treesitter').install(parsers)
       vim.api.nvim_create_autocmd('FileType', {
