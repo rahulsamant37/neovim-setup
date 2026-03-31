@@ -1064,3 +1064,7 @@ vim.api.nvim_create_user_command('R', run_source_file, { desc = 'Compile and run
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+vim.o.tabstop = 4       -- how wide a tab looks
+vim.o.shiftwidth = 4    -- indentation size
+vim.o.softtabstop = 4   -- spaces inserted when pressing Tab
+vim.o.expandtab = true  -- use spaces instead of tabs
