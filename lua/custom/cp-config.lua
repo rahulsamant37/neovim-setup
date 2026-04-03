@@ -193,13 +193,13 @@ end
 
 -- Create/open test files using Competitive Companion naming.
 local function create_test_files()
+  local original_win = vim.api.nvim_get_current_win()
   local source_file = vim.api.nvim_buf_get_name(0)
   local source_dir = vim.fn.fnamemodify(source_file, ':h')
   local numbered_cases = get_numbered_test_cases(source_dir)
 
   local input_file = source_dir .. '/input1.txt'
   local expected_file = source_dir .. '/output1.txt'
-  local output_file = source_dir .. '/output.txt'
 
   -- If listener already populated tests, open the first pair.
   if #numbered_cases > 0 then
@@ -215,16 +215,15 @@ local function create_test_files()
     end
   end
 
-  if vim.fn.filereadable(output_file) == 0 then
-    vim.fn.writefile({}, output_file)
-  end
-
   -- Open in splits
   vim.cmd('split ' .. input_file)
   vim.cmd('vsplit ' .. expected_file)
-  vim.cmd.wincmd('h')
+
+  if vim.api.nvim_win_is_valid(original_win) then
+    vim.api.nvim_set_current_win(original_win)
+  end
   
-  vim.notify('Test files ready (input + expected + output.txt)!', vim.log.levels.INFO)
+  vim.notify('Test files ready (input + expected)!', vim.log.levels.INFO)
 end
 
 -- Compare output.txt with expected output.
@@ -301,6 +300,7 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.keymap.set('n', '<leader>ci', run_with_input, vim.tbl_extend('force', opts, { desc = '[C]ustom [I]nput' }))
     
     -- Test file management
+    vim.keymap.set('n', '<leader>t', create_test_files, vim.tbl_extend('force', opts, { desc = '[T]est files' }))
     vim.keymap.set('n', '<leader>ct', create_test_files, vim.tbl_extend('force', opts, { desc = '[C]reate [T]est files' }))
     vim.keymap.set('n', '<leader>cd', compare_output, vim.tbl_extend('force', opts, { desc = '[C]ompare [D]iff' }))
     
@@ -329,9 +329,14 @@ vim.api.nvim_create_autocmd('BufNewFile', {
   callback = function()
     local source_dir = vim.fn.expand('%:p:h')
     local input_file = source_dir .. '/input1.txt'
+    local expected_file = source_dir .. '/output1.txt'
     
     if vim.fn.filereadable(input_file) == 0 then
       vim.fn.writefile({}, input_file)
+    end
+
+    if vim.fn.filereadable(expected_file) == 0 then
+      vim.fn.writefile({}, expected_file)
     end
   end,
 })

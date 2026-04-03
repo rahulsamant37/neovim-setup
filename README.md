@@ -116,7 +116,7 @@ Configured Jupyter keymaps:
 - `<F5>` -> compile and run with input.txt
 - `<F9>` -> compile only (check errors)
 - `<leader>cr` -> compile and run
-- `<leader>ct` -> create/open test files
+- `<leader>t` -> create/open test files
 - `<leader>cd` -> compare output with expected
 - `<leader>cn` -> create new CP file from template
 
