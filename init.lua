@@ -1073,3 +1073,6 @@ vim.o.tabstop = 4       -- how wide a tab looks
 vim.o.shiftwidth = 4    -- indentation size
 vim.o.softtabstop = 4   -- spaces inserted when pressing Tab
 vim.o.expandtab = true  -- use spaces instead of tabs
+
+-- Load Competitive Programming configuration
+require('custom.cp-config')
