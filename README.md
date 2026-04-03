@@ -1,130 +1,184 @@
-# Neovim Lua Configuration
+# Neovim Setup
 
-Personal Neovim setup based on Kickstart, with competitive programming optimizations, and a clean Lua-first plugin layout.
+Personal Neovim configuration built on kickstart.nvim, focused on a clean Lua setup and a fast C++ competitive programming workflow.
 
-## 🏆 Competitive Programming Setup
+Repository: https://github.com/rahulsamant37/neovim-setup
 
-This configuration includes a complete CP workflow with:
-- **Fast compile & run** (F5 key)
-- **Multiple C++ templates** (cpbasic, cpfull, cpinter, etc.)
-- **Automatic test file management** (input.txt, output.txt)
-- **clangd LSP** for intelligent C++ completion
-- **Debug macros** for quick debugging
-- **Diff comparison** for output verification
+## Introduction
 
-**Quick Start for CP:**
-1. Create a file: `nvim solution.cpp`
-2. Type `cpbasic` and press Tab
-3. Press `<F5>` to compile and run
+This configuration is for users who want:
 
-📖 **See [CP_SETUP_GUIDE.md](CP_SETUP_GUIDE.md) for complete documentation**  
-📋 **See [CP_QUICK_REFERENCE.md](CP_QUICK_REFERENCE.md) for quick reference**
+- A practical Neovim base with modern defaults
+- A CP-focused C++ workflow (compile, run, test, compare)
+- A modular structure that is easy to understand and extend
 
-## Highlights
+It is not a full Neovim distribution. It is a personal setup meant to be forked and adapted.
 
-- Plugin manager: `lazy.nvim`
-- LSP + tool management: `nvim-lspconfig` (with clangd for C++)
-- Completion: `blink.cmp` + `LuaSnip`
-- Fuzzy finding: `telescope.nvim` (+ `telescope-fzf-native.nvim` when `make` is available)
-- Syntax: `nvim-treesitter`
-- Formatting: `conform.nvim` (Lua via `stylua`)
-- Git: `gitsigns.nvim` + `vim-fugitive`
-- UI: `tokyonight.nvim`, `which-key.nvim`, `mini.nvim`, `todo-comments.nvim`
-- Jupyter workflow: `jupytext.nvim` + `molten-nvim`
-- **CP optimizations**: Fast compile/run, templates, test management
+## Features
 
-## Custom Additions
+### Core editor
 
-This config enables custom plugins from `lua/custom/plugins/`:
+- Plugin manager: lazy.nvim
+- LSP and tooling: nvim-lspconfig
+- Completion: blink.cmp + LuaSnip
+- Syntax parsing: nvim-treesitter
+- Formatting: conform.nvim
+- Search/navigation: telescope.nvim
+- Git integration: gitsigns.nvim + vim-fugitive
 
-- `vim-fugitive`
-- `goerz/jupytext.nvim`
-- `benlubas/molten-nvim`
-- `gitsigns.nvim` tweak to skip attaching on `.ipynb` buffers
+### Competitive programming
 
-## Requirements
-
-Minimum:
-
-- Neovim `>= 0.11`
-- `git`
-- `make`
-- `unzip`
-- `rg` (ripgrep)
-
-For C++ Competitive Programming:
-
-- `g++` with C++23 support (or C++20)
-- `clangd` (for LSP features)
-
-For Jupyter integration (`molten-nvim`):
-
-- Python with `pynvim`
-- Python with `jupyter_client`
-
-After first install of `molten-nvim`, run:
-
-```vim
-:UpdateRemotePlugins
-```
+- Fast compile and run for C/C++
+- Compile-only checks
+- Test file management helpers
+- Output comparison helpers
+- Multiple C++ snippet templates
 
 ## Installation
 
-Clone into your Neovim config path:
+### 1. Install Neovim
+
+This setup targets Neovim 0.11 or newer.
+
+Check your version:
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git ~/.config/nvim
+nvim --version
 ```
 
-Start Neovim:
+If your package manager gives an outdated version, install from Neovim releases:
+https://github.com/neovim/neovim/releases
+
+### 2. Install external dependencies
+
+Required tools:
+
+- git
+- make
+- unzip
+- rg (ripgrep)
+
+C++ workflow tools:
+
+- g++ (C++23 recommended)
+- clangd (recommended)
+
+Install options by environment:
+
+<details>
+<summary>Ubuntu / Debian</summary>
+
+```bash
+sudo apt update
+sudo apt install -y git make unzip ripgrep g++ clangd
+```
+
+</details>
+
+<details>
+<summary>Fedora</summary>
+
+```bash
+sudo dnf install -y git make unzip ripgrep gcc-c++ clang-tools-extra
+```
+
+</details>
+
+<details>
+<summary>Arch Linux</summary>
+
+```bash
+sudo pacman -S --needed git make unzip ripgrep gcc clang
+```
+
+</details>
+
+<details>
+<summary>macOS (Homebrew)</summary>
+
+```bash
+brew install git make unzip ripgrep gcc llvm
+```
+
+</details>
+
+### 3. Clone this repository
+
+```bash
+git clone https://github.com/rahulsamant37/neovim-setup ~/.config/nvim
+```
+
+### 4. Start Neovim
 
 ```bash
 nvim
 ```
 
-On first launch, `lazy.nvim` will install plugins automatically.
+On first launch, lazy.nvim bootstraps and installs configured plugins automatically.
 
-## Jupyter Workflow
+### 5. Validate setup
 
-This setup is optimized for notebook-style work inside Neovim:
+Inside Neovim:
 
-- `jupytext.nvim` handles notebook/text sync
-- `molten-nvim` runs code cells against a Jupyter kernel
+```vim
+:checkhealth
+```
 
-Configured Jupyter keymaps:
-
-- `<leader>ji` -> init kernel
-- `<leader>jl` -> run current line
-- `<leader>jv` -> run visual selection
-- `<leader>jr` -> re-run cell
-- `<leader>jo` -> open output window
-- `<leader>jh` -> hide output
-- `<leader>jx` -> clear cell output
-
-## Useful Default Keymaps
+## Quick Start
 
 ### General
-- `<leader>sf` -> search files (Telescope)
-- `<leader>sg` -> live grep (Telescope)
-- `<leader>sh` -> help tags
-- `<leader>f` -> format buffer
-- `<leader>q` -> diagnostics quickfix list
-- `<C-h/j/k/l>` -> move between splits
-- `<Esc><Esc>` in terminal mode -> exit terminal mode
 
-### Competitive Programming (in .cpp files)
-- `<F5>` -> compile and run with input.txt
-- `<F9>` -> compile only (check errors)
-- `<leader>cr` -> compile and run
-- `<leader>t` -> create/open test files
-- `<leader>cd` -> compare output with expected
-- `<leader>cn` -> create new CP file from template
+1. Open Neovim.
+2. Leader key is Space.
+3. Use Space s f to find files.
+4. Use Space s g to search text.
 
-## Optional Kickstart Modules
+### Competitive programming
 
-Additional module files exist under `lua/kickstart/plugins/` (debug, lint, autopairs, neo-tree, extended gitsigns, indent guides), but they are currently commented out in `init.lua`.
+1. Open a .cpp file.
+2. Expand a snippet such as cpbasic or cpfull.
+3. Press F5 to compile and run.
+4. Use Space t to create/open test files.
+5. Use Space c d to compare output and expected output.
 
-To enable any of them, uncomment the corresponding `require 'kickstart.plugins.<name>'` line in `init.lua`.
+## Snippet Triggers (C++)
+
+Available snippet triggers in lua/snippets/cpp.lua:
+
+- cpbasic
+- cpfull
+- cpinter
+- cpext
+- cpa
+- basiccpp
+
+## Keybindings
+
+### General
+
+| Key | Action |
+| --- | --- |
+| Space s f | Find files (Telescope) |
+| Space s g | Live grep (Telescope) |
+| Space s h | Help tags |
+| Space q | Open diagnostics list |
+| Ctrl h / j / k / l | Move between splits |
+| Esc Esc (terminal mode) | Exit terminal mode |
+
+### Competitive programming (C/C++ buffers)
+
+| Key | Action |
+| --- | --- |
+| F5 | Compile and run |
+| F9 | Compile only |
+| F6 | Run compiled binary with custom input |
+| Space c r | Compile and run |
+| Space c c | Compile check only |
+| Space c i | Run with custom input |
+| Space t | Create/open test files |
+| Space c t | Create/open test files |
+| Space c d | Compare output and expected files |
+| Space c n | Create new CP file from snippet template |
 
 ## Project Structure
 
@@ -132,21 +186,47 @@ To enable any of them, uncomment the corresponding `require 'kickstart.plugins.<
 .
 ├── init.lua
 ├── lazy-lock.json
+├── README.md
 └── lua
     ├── custom
-    │   ├── cp-config.lua       # CP keybindings and utilities
+    │   ├── cp-config.lua
     │   └── plugins
-    │       ├── init.lua
-    │       └── cp-setup.lua    # CP plugin configuration
+    │       ├── cp-setup.lua
+    │       └── init.lua
     ├── kickstart
     │   ├── health.lua
     │   └── plugins
     └── snippets
-        └── cpp.lua             # C++ CP templates
+        └── cpp.lua
 ```
+
+## Customization
+
+- init.lua: global options, keymaps, and plugin bootstrap
+- lua/custom/cp-config.lua: CP functions and keymaps
+- lua/custom/plugins/init.lua: personal plugin list
+- lua/custom/plugins/cp-setup.lua: C++ LSP/treesitter settings
+- lua/snippets/cpp.lua: C++ templates/snippets
+
+## Optional: Run in Parallel with Existing Neovim Config
+
+If you already have another setup and want to try this config without replacing it:
+
+```bash
+git clone https://github.com/rahulsamant37/neovim-setup ~/.config/nvim-rahul
+NVIM_APPNAME=nvim-rahul nvim
+```
+
+## Troubleshooting
+
+- Run :Lazy sync if plugins are missing
+- Run :checkhealth to diagnose dependency issues
+- If C++ LSP is missing, verify clangd is installed and in PATH
+- If compile/run fails, verify g++ installation and PATH
 
 ## Notes
 
-- Theme is set to `tokyonight-night`.
-- Nerd Font icons are disabled by default (`vim.g.have_nerd_font = false`).
-- Local C++ snippets are available via LuaSnip in `lua/snippets/cpp.lua`.
+- Leader key is Space
+- Theme is tokyonight-night
+- Nerd Font icons are disabled by default
+- C/C++ indentation is set to 4 spaces
