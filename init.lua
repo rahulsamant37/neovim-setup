@@ -206,7 +206,7 @@ vim.api.nvim_create_autocmd('VimEnter', {
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added via a link or github org/name. To run setup automatically, use `opts = {}`
-  { 'NMAC427/guess-indent.nvim', opts = {} },
+  { 'NMAC427/guess-indent.nvim', enabled = false },
 
   -- Alternatively, use `config = function() ... end` for full control over the configuration.
   -- If you prefer to call `setup` explicitly, use:
@@ -575,7 +575,15 @@ require('lazy').setup({
             })
           end,
           settings = {
-            Lua = {},
+            Lua = {
+              format = {
+                enable = true,
+                defaultConfig = {
+                  indent_style = 'space',
+                  indent_size = '4',
+                },
+              },
+            },
           },
         }
       end
@@ -594,7 +602,11 @@ require('lazy').setup({
     keys = {
       {
         '<leader>f',
-        function() require('conform').format { async = true, lsp_format = 'fallback' } end,
+        function()
+          local ft = vim.bo.filetype
+          local lsp_mode = (ft == 'c' or ft == 'cpp') and 'never' or 'fallback'
+          require('conform').format { async = true, lsp_format = lsp_mode }
+        end,
         mode = '',
         desc = '[F]ormat buffer',
       },
@@ -603,6 +615,14 @@ require('lazy').setup({
     ---@type conform.setupOpts
     opts = {
       notify_on_error = false,
+      formatters = {
+        stylua = {
+          prepend_args = { '--indent-type', 'Spaces', '--indent-width', '4' },
+        },
+        clang_format = {
+          prepend_args = { '--style={BasedOnStyle: LLVM, IndentWidth: 4, TabWidth: 4, UseTab: Never}' },
+        },
+      },
       format_on_save = function(bufnr)
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
@@ -618,6 +638,8 @@ require('lazy').setup({
         end
       end,
       formatters_by_ft = {
+        c = vim.fn.executable 'clang-format' == 1 and { 'clang_format' } or {},
+        cpp = vim.fn.executable 'clang-format' == 1 and { 'clang_format' } or {},
         lua = vim.fn.executable 'stylua' == 1 and { 'stylua' } or {},
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
@@ -1046,7 +1068,7 @@ end
 vim.api.nvim_create_user_command('R', run_source_file, { desc = 'Compile and run current C++/Java file' })
 
 -- The line beneath this is called `modeline`. See `:help modeline`
--- vim: ts=2 sts=2 sw=2 et
+-- vim: ts=4 sts=4 sw=4 et
 vim.o.tabstop = 4       -- how wide a tab looks
 vim.o.shiftwidth = 4    -- indentation size
 vim.o.softtabstop = 4   -- spaces inserted when pressing Tab
