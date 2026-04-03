@@ -3,6 +3,22 @@
 
 local M = {}
 
+local function get_numbered_test_cases(source_dir)
+  local input_files = vim.fn.globpath(source_dir, 'input*.txt', false, true)
+  local cases = {}
+
+  for _, file in ipairs(input_files) do
+    local name = vim.fn.fnamemodify(file, ':t')
+    local idx = name:match('^input(%d+)%.txt$')
+    if idx then
+      table.insert(cases, tonumber(idx))
+    end
+  end
+
+  table.sort(cases)
+  return cases
+end
+
 -- ==================== CP-SPECIFIC OPTIONS ====================
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'cpp', 'c' },
@@ -41,7 +57,8 @@ local function compile_and_run_cpp()
   local binary_path = source_dir .. '/' .. source_base
   local input_file = source_dir .. '/input.txt'
   local output_file = source_dir .. '/output.txt'
-  local expected_file = source_dir .. '/expected.txt'
+  local numbered_cases = get_numbered_test_cases(source_dir)
+  local numbered_input = source_dir .. '/input1.txt'
 
   -- Compile with LOCAL flag for debugging
   local compile_cmd = string.format(
@@ -68,13 +85,29 @@ local function compile_and_run_cpp()
   vim.cmd.cclose()
   vim.notify('Compilation successful!', vim.log.levels.INFO)
 
-  -- Run with input.txt if it exists
+  -- Prefer Competitive Companion style input1.txt, fallback to input.txt.
   local run_cmd = vim.fn.shellescape(binary_path)
-  if vim.fn.filereadable(input_file) == 1 then
-    run_cmd = run_cmd .. ' < ' .. vim.fn.shellescape(input_file)
-    if vim.fn.filereadable(output_file) == 1 then
-      run_cmd = run_cmd .. ' > ' .. vim.fn.shellescape(output_file)
+  local selected_input = nil
+  if #numbered_cases > 0 and vim.fn.filereadable(numbered_input) == 1 then
+    selected_input = numbered_input
+  elseif vim.fn.filereadable(input_file) == 1 then
+    selected_input = input_file
+  end
+
+  if selected_input then
+    -- Keep LOCAL freopen("input.txt") templates working with input1.txt tests.
+    if selected_input ~= input_file then
+      local input_lines = vim.fn.readfile(selected_input)
+      vim.fn.writefile(input_lines, input_file)
     end
+
+    run_cmd = run_cmd .. ' < ' .. vim.fn.shellescape(selected_input)
+
+    -- Always capture run output for CPDiff.
+    if vim.fn.filereadable(output_file) == 0 then
+      vim.fn.writefile({}, output_file)
+    end
+    run_cmd = run_cmd .. ' > ' .. vim.fn.shellescape(output_file)
   end
 
   -- Add timing
@@ -158,24 +191,32 @@ local function run_with_input()
   end)
 end
 
--- Create test files (input.txt, output.txt, expected.txt)
+-- Create/open test files using Competitive Companion naming.
 local function create_test_files()
   local source_file = vim.api.nvim_buf_get_name(0)
   local source_dir = vim.fn.fnamemodify(source_file, ':h')
-  
-  local input_file = source_dir .. '/input.txt'
-  local output_file = source_dir .. '/output.txt'
-  local expected_file = source_dir .. '/expected.txt'
+  local numbered_cases = get_numbered_test_cases(source_dir)
 
-  -- Create files if they don't exist
-  if vim.fn.filereadable(input_file) == 0 then
-    vim.fn.writefile({}, input_file)
+  local input_file = source_dir .. '/input1.txt'
+  local expected_file = source_dir .. '/output1.txt'
+  local output_file = source_dir .. '/output.txt'
+
+  -- If listener already populated tests, open the first pair.
+  if #numbered_cases > 0 then
+    local first = numbered_cases[1]
+    input_file = source_dir .. '/input' .. first .. '.txt'
+    expected_file = source_dir .. '/output' .. first .. '.txt'
+  else
+    if vim.fn.filereadable(input_file) == 0 then
+      vim.fn.writefile({}, input_file)
+    end
+    if vim.fn.filereadable(expected_file) == 0 then
+      vim.fn.writefile({}, expected_file)
+    end
   end
+
   if vim.fn.filereadable(output_file) == 0 then
     vim.fn.writefile({}, output_file)
-  end
-  if vim.fn.filereadable(expected_file) == 0 then
-    vim.fn.writefile({}, expected_file)
   end
 
   -- Open in splits
@@ -183,15 +224,20 @@ local function create_test_files()
   vim.cmd('vsplit ' .. expected_file)
   vim.cmd.wincmd('h')
   
-  vim.notify('Test files created/opened!', vim.log.levels.INFO)
+  vim.notify('Test files ready (input + expected + output.txt)!', vim.log.levels.INFO)
 end
 
--- Compare output with expected
+-- Compare output.txt with expected output.
 local function compare_output()
   local source_file = vim.api.nvim_buf_get_name(0)
   local source_dir = vim.fn.fnamemodify(source_file, ':h')
+  local numbered_cases = get_numbered_test_cases(source_dir)
   local output_file = source_dir .. '/output.txt'
   local expected_file = source_dir .. '/expected.txt'
+
+  if #numbered_cases > 0 and vim.fn.filereadable(source_dir .. '/output1.txt') == 1 then
+    expected_file = source_dir .. '/output1.txt'
+  end
 
   if vim.fn.filereadable(output_file) == 0 then
     vim.notify('output.txt not found!', vim.log.levels.ERROR)
@@ -207,7 +253,7 @@ local function compare_output()
   vim.cmd('vsplit ' .. expected_file)
   vim.cmd.windo('diffthis')
   
-  vim.notify('Comparing output with expected...', vim.log.levels.INFO)
+  vim.notify('Comparing output.txt with expected output...', vim.log.levels.INFO)
 end
 
 -- Create new CP file from template
@@ -273,16 +319,16 @@ vim.keymap.set('n', '<leader>cp', ':edit ~/.config/nvim/lua/custom/cp-config.lua
 vim.api.nvim_create_user_command('CPRun', compile_and_run_cpp, { desc = 'Compile and run C++ file' })
 vim.api.nvim_create_user_command('CPCompile', compile_cpp, { desc = 'Compile C++ file' })
 vim.api.nvim_create_user_command('CPTest', create_test_files, { desc = 'Create/open test files' })
-vim.api.nvim_create_user_command('CPDiff', compare_output, { desc = 'Compare output with expected' })
+vim.api.nvim_create_user_command('CPDiff', compare_output, { desc = 'Compare output.txt with expected output' })
 vim.api.nvim_create_user_command('CPNew', new_cp_file, { desc = 'Create new CP file from template' })
 
 -- ==================== AUTO-COMMANDS ====================
--- Auto-create input.txt when opening a .cpp file
+-- Auto-create input1.txt when opening a new .cpp file
 vim.api.nvim_create_autocmd('BufNewFile', {
   pattern = '*.cpp',
   callback = function()
     local source_dir = vim.fn.expand('%:p:h')
-    local input_file = source_dir .. '/input.txt'
+    local input_file = source_dir .. '/input1.txt'
     
     if vim.fn.filereadable(input_file) == 0 then
       vim.fn.writefile({}, input_file)
