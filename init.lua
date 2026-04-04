@@ -178,11 +178,11 @@ end
 local rtp = vim.opt.rtp
 rtp:prepend(lazypath)
 
--- nvim-treesitter health compares against stdpath('data')/site/ (with trailing slash).
--- Keep this exact entry in runtimepath to avoid false-negative health errors.
+-- nvim-treesitter's health check expects stdpath('data')/site/ (with trailing slash)
+-- to be explicitly present in runtimepath on Neovim 0.11.
 local treesitter_site_dir = vim.fn.stdpath 'data' .. '/site/'
 local function ensure_treesitter_site_in_rtp()
-  if not vim.list_contains(vim.api.nvim_list_runtime_paths(), treesitter_site_dir) then
+  if not vim.o.runtimepath:find(treesitter_site_dir, 1, true) then
     vim.o.runtimepath = treesitter_site_dir .. ',' .. vim.o.runtimepath
   end
 end
@@ -190,6 +190,11 @@ ensure_treesitter_site_in_rtp()
 vim.api.nvim_create_autocmd('VimEnter', {
   group = vim.api.nvim_create_augroup('kickstart-treesitter-rtp', { clear = true }),
   once = true,
+  callback = ensure_treesitter_site_in_rtp,
+})
+vim.api.nvim_create_autocmd('User', {
+  group = vim.api.nvim_create_augroup('kickstart-treesitter-rtp-post-lazy', { clear = true }),
+  pattern = { 'LazyDone', 'VeryLazy' },
   callback = ensure_treesitter_site_in_rtp,
 })
 
@@ -821,11 +826,11 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     lazy = false,
     build = ':TSUpdate',
-    branch = 'main',
+    commit = '90cd6580e720caedacb91fdd587b747a6e77d61f',
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter-intro`
     config = function()
-      require('nvim-treesitter').setup { install_dir = vim.fn.stdpath 'data' .. '/site/' }
-      local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+      require('nvim-treesitter').setup { install_dir = vim.fn.stdpath 'data' .. '/site' }
+      local parsers = { 'bash', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
       require('nvim-treesitter').install(parsers)
       vim.api.nvim_create_autocmd('FileType', {
         callback = function(args)

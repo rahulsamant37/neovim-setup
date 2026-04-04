@@ -28,13 +28,4 @@ return {
       end
     end,
   },
-
-  -- Enhanced C++ syntax highlighting
-  {
-    'nvim-treesitter/nvim-treesitter',
-    opts = function()
-      -- Ensure C++ parser is installed
-      vim.cmd('TSInstall cpp')
-    end,
-  },
 }
