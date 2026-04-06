@@ -30,8 +30,10 @@ It is not a full Neovim distribution. It is a personal setup meant to be forked 
 
 - Fast compile and run for C/C++
 - Compile-only checks
+- Compile modes for fast/debug/submit workflows
 - Test file management helpers
 - Output comparison helpers
+- Built-in stress testing command
 - Multiple C++ snippet templates
 
 ## Installation
@@ -62,6 +64,7 @@ C++ workflow tools:
 
 - g++ (C++23 recommended)
 - clangd (recommended)
+- clang-format (recommended for consistent formatting)
 
 Install options by environment:
 
@@ -70,7 +73,7 @@ Install options by environment:
 
 ```bash
 sudo apt update
-sudo apt install -y git make unzip ripgrep g++ clangd
+sudo apt install -y git make unzip ripgrep g++ clangd clang-format
 ```
 
 </details>
@@ -88,7 +91,7 @@ sudo dnf install -y git make unzip ripgrep gcc-c++ clang-tools-extra
 <summary>Arch Linux</summary>
 
 ```bash
-sudo pacman -S --needed git make unzip ripgrep gcc clang
+sudo pacman -S --needed git make unzip ripgrep gcc clang clang-tools-extra
 ```
 
 </details>
@@ -139,7 +142,9 @@ Inside Neovim:
 2. Expand a snippet such as cpbasic or cpfull.
 3. Press F5 to compile and run.
 4. Use Space t to create/open test files.
-5. Use Space c d to compare output and expected output.
+5. Use Space c d to compare output.txt and output1.txt.
+6. Use Space c m to cycle compile mode (fast/debug/submit).
+7. Use Space c s to run stress tests.
 
 ## Snippet Triggers (C++)
 
@@ -177,8 +182,19 @@ Available snippet triggers in lua/snippets/cpp.lua:
 | Space c i | Run with custom input |
 | Space t | Create/open test files |
 | Space c t | Create/open test files |
-| Space c d | Compare output and expected files |
+| Space c d | Compare output.txt with output1.txt |
 | Space c n | Create new CP file from snippet template |
+| Space c s | Run stress test (defaults: gen.cpp + brute.cpp) |
+| Space c m | Cycle compile mode (fast/debug/submit) |
+| Space c M | Choose compile mode from menu |
+
+### Competitive programming commands
+
+| Command | Action |
+| --- | --- |
+| :CPMode fast\|debug\|submit | Set compile mode |
+| :CPCycleMode | Cycle compile mode |
+| :CPStress [gen.cpp] [brute.cpp] [iters] | Run stress tests |
 
 ## Project Structure
 
@@ -222,6 +238,7 @@ NVIM_APPNAME=nvim-rahul nvim
 - Run :Lazy sync if plugins are missing
 - Run :checkhealth to diagnose dependency issues
 - If C++ LSP is missing, verify clangd is installed and in PATH
+- If C/C++ formatting does not work, verify clang-format is installed and in PATH
 - If compile/run fails, verify g++ installation and PATH
 
 ## Notes

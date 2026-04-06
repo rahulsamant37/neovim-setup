@@ -16,7 +16,7 @@ return {
             '--header-insertion=iwyu',
             '--completion-style=detailed',
             '--function-arg-placeholders',
-            '--fallback-style=llvm',
+            '--fallback-style={BasedOnStyle: llvm, IndentWidth: 4, TabWidth: 4, UseTab: Never}',
           },
           init_options = {
             usePlaceholders = true,
