@@ -1029,5 +1029,8 @@ vim.o.expandtab = true  -- use spaces instead of tabs
 
 vim.keymap.set("n", "<leader>-", vim.cmd.Ex)
 
+-- Load quickref integration
+require('custom.quickref').setup()
+
 -- Load Competitive Programming configuration
 require('custom.cp-config')
