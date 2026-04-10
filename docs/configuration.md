@@ -100,7 +100,7 @@ Why import from `custom.plugins`:
 `lua/custom/cp-config.lua` provides:
 
 - Compile modes: `fast`, `debug`, `submit`
-- Commands: `:CPRun`, `:CPCompile`, `:CPTest`, `:CPDiff`, `:CPNew`, `:CPStress`, `:CPMode`, `:CPCycleMode`
+- Commands: `:CPRun`, `:CPCompile`, `:CPTest`, `:CPDiff`, `:CPClear`, `:CPNew`, `:CPStress`, `:CPMode`, `:CPCycleMode`
 - File workflow around `input1.txt` / `output1.txt`
 
 Why numbered test files:

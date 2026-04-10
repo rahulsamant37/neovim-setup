@@ -163,6 +163,7 @@ It compiles with `javac`, runs with `java`, and uses `input.txt` automatically i
 | `:CPCompile` | Compile only |
 | `:CPTest` | Create/open test files |
 | `:CPDiff` | Compare `output.txt` with expected output |
+| `:CPClear` | Delete generated artifacts: `input*.txt`, `output*.txt`, `expected*.txt` (including numbered files), and current-file executable |
 | `:CPStress ...` | Stress test solution |
 | `:R` | Compile and run current C++/Java file |
 

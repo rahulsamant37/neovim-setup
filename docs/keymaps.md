@@ -139,6 +139,7 @@ These mappings are filetype-local for `c` and `cpp` buffers.
 | N | `<leader>t` | Create/open test files |
 | N | `<leader>ct` | Create/open test files |
 | N | `<leader>cd` | Compare output with expected output |
+| N | `<leader>x` | Delete generated artifacts: input*.txt, output*.txt, expected*.txt (including numbered files), and current-file executable |
 | N | `<leader>cn` | Create new CP file from snippet |
 | N | `<leader>cs` | Start stress test |
 | N | `<leader>cm` | Cycle compile mode |
@@ -166,6 +167,7 @@ Global helper mapping:
 | `:CPCompile` | Compile only |
 | `:CPTest` | Create/open test files |
 | `:CPDiff` | Compare output with expected file |
+| `:CPClear` | Delete generated artifacts: input*.txt, output*.txt, expected*.txt (including numbered files), and current-file executable |
 | `:CPNew` | New C++ file from template |
 | `:CPStress ...` | Stress test solution |
 | `:CPMode fast|debug|submit` | Set compile mode |

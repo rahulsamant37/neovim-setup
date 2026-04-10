@@ -143,8 +143,9 @@ Inside Neovim:
 3. Press F5 to compile and run.
 4. Use Space t to create/open test files.
 5. Use Space c d to compare output.txt and output1.txt.
-6. Use Space c m to cycle compile mode (fast/debug/submit).
-7. Use Space c s to run stress tests.
+6. Use Space x to delete generated artifacts: input*.txt, output*.txt, expected*.txt (including numbered files), and the compiled executable for the current file.
+7. Use Space c m to cycle compile mode (fast/debug/submit).
+8. Use Space c s to run stress tests.
 
 ## Snippet Triggers (C++)
 
@@ -183,6 +184,7 @@ Available snippet triggers in lua/snippets/cpp.lua:
 | Space t | Create/open test files |
 | Space c t | Create/open test files |
 | Space c d | Compare output.txt with output1.txt |
+| Space x | Delete generated artifacts: input*.txt, output*.txt, expected*.txt (including numbered files), and current-file executable |
 | Space c n | Create new CP file from snippet template |
 | Space c s | Run stress test (defaults: gen.cpp + brute.cpp) |
 | Space c m | Cycle compile mode (fast/debug/submit) |
@@ -194,6 +196,7 @@ Available snippet triggers in lua/snippets/cpp.lua:
 | --- | --- |
 | :CPMode fast\|debug\|submit | Set compile mode |
 | :CPCycleMode | Cycle compile mode |
+| :CPClear | Delete generated artifacts: input*.txt, output*.txt, expected*.txt (including numbered files), and current-file executable |
 | :CPStress [gen.cpp] [brute.cpp] [iters] | Run stress tests |
 
 ## Project Structure
