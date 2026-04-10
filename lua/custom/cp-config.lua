@@ -434,6 +434,62 @@ local function compare_output()
   vim.notify('Comparing output.txt with ' .. vim.fn.fnamemodify(expected_file, ':t') .. '...', vim.log.levels.INFO)
 end
 
+-- Delete generated local artifacts while preserving source files.
+local function clear_test_residue()
+  local ctx = get_cpp_context()
+  if not ctx then
+    return
+  end
+
+  local patterns = {
+    'input*.txt',
+    'output*.txt',
+    'expected*.txt',
+    'intput*.txt',
+    'ouput*.txt',
+  }
+
+  local candidates = {}
+  for _, pattern in ipairs(patterns) do
+    local matches = vim.fn.globpath(ctx.source_dir, pattern, false, true)
+    for _, path in ipairs(matches) do
+      table.insert(candidates, path)
+    end
+  end
+
+  if ctx.binary_path ~= ctx.source_file then
+    table.insert(candidates, ctx.binary_path)
+  end
+
+  local seen = {}
+  local removed = {}
+  for _, file_path in ipairs(candidates) do
+    if not seen[file_path] then
+      seen[file_path] = true
+
+      if vim.fn.getftype(file_path) == 'file' then
+        local should_delete = true
+
+        -- Only remove the compiled target when it is actually executable.
+        if file_path == ctx.binary_path then
+          should_delete = vim.fn.executable(file_path) == 1
+        end
+
+        if should_delete and vim.fn.delete(file_path) == 0 then
+          table.insert(removed, vim.fn.fnamemodify(file_path, ':t'))
+        end
+      end
+    end
+  end
+
+  if #removed == 0 then
+    vim.notify('No generated CP artifacts found to delete.', vim.log.levels.INFO)
+    return
+  end
+
+  vim.notify('Deleted: ' .. table.concat(removed, ', '), vim.log.levels.INFO)
+end
+
 -- Create new CP file from template.
 local function new_cp_file()
   vim.ui.input({ prompt = 'Enter filename (without .cpp): ' }, function(filename)
@@ -601,6 +657,7 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.keymap.set('n', '<leader>t', create_test_files, vim.tbl_extend('force', opts, { desc = '[T]est files' }))
     vim.keymap.set('n', '<leader>ct', create_test_files, vim.tbl_extend('force', opts, { desc = '[C]reate [T]est files' }))
     vim.keymap.set('n', '<leader>cd', compare_output, vim.tbl_extend('force', opts, { desc = '[C]ompare [D]iff' }))
+    vim.keymap.set('n', '<leader>x', clear_test_residue, vim.tbl_extend('force', opts, { desc = 'Delete CP artifacts (input*/output*/expected* + exe)' }))
 
     -- New CP file and stress test
     vim.keymap.set('n', '<leader>cn', new_cp_file, vim.tbl_extend('force', opts, { desc = '[C]reate [N]ew CP file' }))
@@ -629,6 +686,7 @@ vim.api.nvim_create_user_command('CPRun', compile_and_run_cpp, { desc = 'Compile
 vim.api.nvim_create_user_command('CPCompile', compile_cpp, { desc = 'Compile C++ file' })
 vim.api.nvim_create_user_command('CPTest', create_test_files, { desc = 'Create/open test files' })
 vim.api.nvim_create_user_command('CPDiff', compare_output, { desc = 'Compare output.txt with expected output' })
+vim.api.nvim_create_user_command('CPClear', clear_test_residue, { desc = 'Delete CP artifacts (input*/output*/expected* + executable)' })
 vim.api.nvim_create_user_command('CPNew', new_cp_file, { desc = 'Create new CP file from template' })
 vim.api.nvim_create_user_command('CPStress', stress_test, {
   nargs = '*',
@@ -672,6 +730,7 @@ M.compile_and_run = compile_and_run_cpp
 M.compile_only = compile_cpp
 M.create_test_files = create_test_files
 M.compare_output = compare_output
+M.clear_test_residue = clear_test_residue
 M.new_cp_file = new_cp_file
 M.stress_test = stress_test
 M.set_compile_mode = set_compile_mode
