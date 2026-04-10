@@ -18,6 +18,12 @@ local compile_modes = {
   },
 }
 
+local c_compile_mode_flags = {
+  fast = '-std=c17 -O2 -pipe -Wall -Wextra -Wshadow -Wconversion -DLOCAL',
+  debug = '-std=c17 -O0 -g3 -Wall -Wextra -Wshadow -Wconversion -DLOCAL -fsanitize=address,undefined -fno-omit-frame-pointer',
+  submit = '-std=c17 -O2 -pipe -Wall -Wextra -Wshadow -DNDEBUG',
+}
+
 local stress_compile_flags = '-std=c++23 -O2 -pipe -Wall -Wextra -Wshadow'
 
 local compile_mode = vim.g.cp_compile_mode
@@ -35,14 +41,33 @@ local function get_mode(mode_name)
   return compile_modes.fast, 'fast'
 end
 
+local function get_compile_profile_for_buffer(bufnr, mode_name)
+  local mode, selected_mode = get_mode(mode_name)
+  local ft = vim.bo[bufnr].filetype
+
+  if ft == 'c' then
+    return {
+      compiler = 'gcc',
+      flags = c_compile_mode_flags[selected_mode] or c_compile_mode_flags.fast,
+      label = mode.label,
+    }
+  end
+
+  return {
+    compiler = 'g++',
+    flags = mode.flags,
+    label = mode.label,
+  }
+end
+
 local function update_makeprg_for_buffer(bufnr)
   local ft = vim.bo[bufnr].filetype
   if ft ~= 'c' and ft ~= 'cpp' then
     return
   end
 
-  local mode = get_mode()
-  vim.bo[bufnr].makeprg = string.format('g++ %s %% -o %%:r', mode.flags)
+  local profile = get_compile_profile_for_buffer(bufnr)
+  vim.bo[bufnr].makeprg = string.format('%s %s %% -o %%:r', profile.compiler, profile.flags)
 end
 
 local function set_compile_mode(mode_name, silent)
@@ -181,9 +206,10 @@ local function get_cpp_context()
   }
 end
 
-local function compile_source_file(source_file, binary_path, flags, quickfix_title)
+local function compile_source_file(source_file, binary_path, compiler, flags, quickfix_title)
   local compile_cmd = string.format(
-    'g++ %s %s -o %s 2>&1',
+    '%s %s %s -o %s 2>&1',
+    compiler,
     flags,
     vim.fn.shellescape(source_file),
     vim.fn.shellescape(binary_path)
@@ -205,12 +231,12 @@ local function compile_cpp_with_result(notify_success)
     return false, nil
   end
 
-  local mode = get_mode()
-  local ok = compile_source_file(ctx.source_file, ctx.binary_path, mode.flags, 'Compilation Errors')
+  local profile = get_compile_profile_for_buffer(ctx.bufnr)
+  local ok = compile_source_file(ctx.source_file, ctx.binary_path, profile.compiler, profile.flags, 'Compilation Errors')
 
   if ok then
     if notify_success then
-      vim.notify('Compilation successful [' .. mode.label .. ']!', vim.log.levels.INFO)
+      vim.notify('Compilation successful [' .. profile.label .. ']!', vim.log.levels.INFO)
     end
   else
     vim.notify('Compilation failed!', vim.log.levels.ERROR)
@@ -488,17 +514,17 @@ local function stress_test(opts)
 
   vim.notify('Compiling stress-test binaries...', vim.log.levels.INFO)
 
-  if not compile_source_file(ctx.source_file, solution_bin, solution_flags, 'Stress Test: solution compile errors') then
+  if not compile_source_file(ctx.source_file, solution_bin, 'g++', solution_flags, 'Stress Test: solution compile errors') then
     vim.notify('Stress test aborted: solution compilation failed.', vim.log.levels.ERROR)
     return
   end
 
-  if not compile_source_file(generator_src, generator_bin, stress_compile_flags, 'Stress Test: generator compile errors') then
+  if not compile_source_file(generator_src, generator_bin, 'g++', stress_compile_flags, 'Stress Test: generator compile errors') then
     vim.notify('Stress test aborted: generator compilation failed.', vim.log.levels.ERROR)
     return
   end
 
-  if not compile_source_file(brute_src, brute_bin, stress_compile_flags, 'Stress Test: brute compile errors') then
+  if not compile_source_file(brute_src, brute_bin, 'g++', stress_compile_flags, 'Stress Test: brute compile errors') then
     vim.notify('Stress test aborted: brute compilation failed.', vim.log.levels.ERROR)
     return
   end
