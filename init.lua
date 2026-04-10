@@ -646,6 +646,8 @@ require('lazy').setup({
         c = vim.fn.executable 'clang-format' == 1 and { 'clang_format' } or {},
         cpp = vim.fn.executable 'clang-format' == 1 and { 'clang_format' } or {},
         lua = vim.fn.executable 'stylua' == 1 and { 'stylua' } or {},
+        rust = vim.fn.executable 'rustfmt' == 1 and { 'rustfmt' } or {},
+        toml = vim.fn.executable 'taplo' == 1 and { 'taplo' } or {},
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -746,7 +748,7 @@ require('lazy').setup({
       -- the rust implementation via `'prefer_rust_with_warning'`
       --
       -- See :h blink-cmp-config-fuzzy for more information
-      fuzzy = { implementation = 'prefer_rust' },
+      fuzzy = { implementation = 'lua' },
 
       -- Shows a signature help window while you type arguments for a function
       signature = { enabled = true },
@@ -830,7 +832,7 @@ require('lazy').setup({
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter-intro`
     config = function()
       require('nvim-treesitter').setup { install_dir = vim.fn.stdpath 'data' .. '/site' }
-      local parsers = { 'bash', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+      local parsers = { 'bash', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'rust', 'toml', 'vim', 'vimdoc' }
       require('nvim-treesitter').install(parsers)
       vim.api.nvim_create_autocmd('FileType', {
         callback = function(args)
