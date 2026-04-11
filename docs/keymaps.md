@@ -36,6 +36,29 @@ Example:
 1. Open two vertical splits.
 2. Use `<C-h>` and `<C-l>` to switch between them without leaving normal mode.
 
+## Buffer Navigation (Same Window)
+
+These are custom mappings added for easier same-window buffer flow.
+
+| Mode | Key | Action |
+| --- | --- | --- |
+| N | `<leader>be` | New empty buffer in same window |
+| N | `<leader>bl` | List buffers |
+| N | `<leader>bn` | Next buffer |
+| N | `<leader>bp` | Previous buffer |
+| N | `<leader>bb` | Last buffer |
+| N | `<leader>bd` | Delete current buffer |
+| N | `<S-l>` | Next buffer |
+| N | `<S-h>` | Previous buffer |
+| N | `]b` | Next buffer |
+| N | `[b` | Previous buffer |
+
+Quick way to remember:
+
+1. Use `<leader>be` to create a fresh buffer.
+2. Move with `<S-h>` and `<S-l>`.
+3. Close with `<leader>bd` when done.
+
 ## Search and Navigation (Telescope)
 
 | Mode | Key | Action |
