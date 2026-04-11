@@ -633,6 +633,21 @@ echo "All stress tests passed: %d"
   vim.notify('Stress test started (' .. iterations .. ' iterations).', vim.log.levels.INFO)
 end
 
+local function cpalg_src_dir()
+  return vim.env.CPALG_SRC or (vim.env.HOME .. '/github/cp-algorithms/src')
+end
+
+local function open_cpalg_file(relative_path)
+  local path = cpalg_src_dir() .. '/' .. relative_path
+
+  if vim.fn.filereadable(path) == 0 then
+    vim.notify('CP-Algorithms file not found: ' .. path, vim.log.levels.WARN)
+    return
+  end
+
+  vim.cmd.edit(vim.fn.fnameescape(path))
+end
+
 -- ==================== KEYBINDINGS ====================
 
 vim.api.nvim_create_autocmd('FileType', {
@@ -679,6 +694,18 @@ vim.api.nvim_create_autocmd('FileType', {
 
 -- Global keybinding
 vim.keymap.set('n', '<leader>cp', ':edit ~/.config/nvim/lua/custom/cp-config.lua<CR>', { desc = 'Edit [C][P] config' })
+vim.keymap.set('n', '<leader>ar', function()
+  open_cpalg_file('essential_learning_path.md')
+end, { desc = '[A]lgorithms [R]oadmap' })
+vim.keymap.set('n', '<leader>aw', function()
+  open_cpalg_file('essential_weekly_plan.md')
+end, { desc = '[A]lgorithms [W]eekly plan' })
+vim.keymap.set('n', '<leader>al', function()
+  open_cpalg_file('essential_read_first_order.txt')
+end, { desc = '[A]lgorithms [L]ist (read first)' })
+vim.keymap.set('n', '<leader>aL', function()
+  open_cpalg_file('essential_revise_later_order.txt')
+end, { desc = '[A]lgorithms revise [L]ist' })
 
 -- ==================== COMMANDS ====================
 
@@ -702,6 +729,18 @@ end, {
   desc = 'Set compile mode: fast|debug|submit',
 })
 vim.api.nvim_create_user_command('CPCycleMode', cycle_compile_mode, { desc = 'Cycle compile mode' })
+vim.api.nvim_create_user_command('CPARoadmap', function()
+  open_cpalg_file('essential_learning_path.md')
+end, { desc = 'Open CP-Algorithms essential roadmap' })
+vim.api.nvim_create_user_command('CPAWeeklyPlan', function()
+  open_cpalg_file('essential_weekly_plan.md')
+end, { desc = 'Open CP-Algorithms weekly plan' })
+vim.api.nvim_create_user_command('CPAReadList', function()
+  open_cpalg_file('essential_read_first_order.txt')
+end, { desc = 'Open CP-Algorithms read-first list' })
+vim.api.nvim_create_user_command('CPAReviseList', function()
+  open_cpalg_file('essential_revise_later_order.txt')
+end, { desc = 'Open CP-Algorithms revise-later list' })
 
 -- ==================== AUTO-COMMANDS ====================
 
