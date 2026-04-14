@@ -98,7 +98,8 @@ Why this helps:
 ### Which command should I use: `<F5>`, `:CPRun`, or `:R`?
 
 - `<F5>` and `:CPRun`: C/C++ compile and run via CP workflow
-- `:R`: convenience command that runs C/C++ (delegates to CP workflow) and Java
+- `:R`: convenience command that runs C/C++ (delegates to CP workflow), Java, and Rust
+- `:CPRunInteractive` (or `<F7>`/`<leader>r` in C/C++ buffers): interactive C/C++ run mode
 
 Use `<F5>` for the fastest CP loop.
 

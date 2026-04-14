@@ -153,6 +153,31 @@ Example:
 
 It compiles with `javac`, runs with `java`, and uses `input.txt` automatically if present.
 
+## Rust Quick Run
+
+The `:R` command supports Rust files.
+
+Example:
+
+1. Open `main.rs`
+2. Run:
+
+```vim
+:R
+```
+
+Behavior:
+
+- In a Cargo project, it runs `cargo run --bin <target>` for the current file when possible (and uses `input.txt` if present).
+- If Cargo has multiple binaries and the target cannot be inferred from the current file, Neovim prompts you to choose one.
+- For a standalone `.rs` file, it compiles with `rustc` and runs the produced binary.
+- Use `:RCompile` for compile/check only (without running).
+
+Rust keymaps in Rust buffers:
+
+- `<F5>` / `<leader>cr` for run (`:R`)
+- `<F9>` / `<leader>cc` for compile/check (`:RCompile`)
+
 ## Useful Commands to Remember
 
 | Command | Purpose |
@@ -165,7 +190,8 @@ It compiles with `javac`, runs with `java`, and uses `input.txt` automatically i
 | `:CPDiff` | Compare `output.txt` with expected output |
 | `:CPClear` | Delete generated artifacts: `input*.txt`, `output*.txt`, `expected*.txt` (including numbered files), and current-file executable |
 | `:CPStress ...` | Stress test solution |
-| `:R` | Compile and run current C++/Java file |
+| `:R` | Compile and run current C/C++/Java/Rust file |
+| `:RCompile` | Compile/check current C/C++/Java/Rust file |
 
 ## Next Step
 

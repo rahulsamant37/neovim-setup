@@ -159,6 +159,8 @@ These mappings are filetype-local for `c` and `cpp` buffers.
 | N | `<leader>cc` | Compile check |
 | N | `<F6>` | Run compiled binary with custom input |
 | N | `<leader>ci` | Run with custom input |
+| N | `<F7>` | Run compiled binary interactively (C/C++) |
+| N | `<leader>r` | Run compiled binary interactively (C/C++) |
 | N | `<leader>t` | Create/open test files |
 | N | `<leader>ct` | Create/open test files |
 | N | `<leader>cd` | Compare output with expected output |
@@ -182,12 +184,30 @@ Global helper mapping:
 3. Press `<F5>` to compile and run
 4. Press `<leader>cd` to compare generated `output.txt` with expected output
 
+## Rust Run and Compile Keymaps (Rust Buffers)
+
+These mappings are filetype-local for `rust` buffers.
+
+| Mode | Key | Action |
+| --- | --- | --- |
+| N | `<F5>` | Compile and run (`:R`) |
+| N | `<leader>cr` | Compile and run (`:R`) |
+| N | `<F9>` | Compile/check (`:RCompile`) |
+| N | `<leader>cc` | Compile/check (`:RCompile`) |
+
+Rust run behavior:
+
+- Inside a Cargo project: uses `cargo run --bin <target>` when target can be inferred from the current file
+- If target inference is ambiguous in a multi-bin workspace: prompts you to select a binary
+- Standalone `.rs` file: uses `rustc` compile + run
+
 ## Commands (Related, Not Keymaps)
 
 | Command | Action |
 | --- | --- |
 | `:CPRun` | Compile and run C++ |
 | `:CPCompile` | Compile only |
+| `:CPRunInteractive` | Run C/C++ binary interactively |
 | `:CPTest` | Create/open test files |
 | `:CPDiff` | Compare output with expected file |
 | `:CPClear` | Delete generated artifacts: input*.txt, output*.txt, expected*.txt (including numbered files), and current-file executable |
@@ -195,4 +215,5 @@ Global helper mapping:
 | `:CPStress ...` | Stress test solution |
 | `:CPMode fast|debug|submit` | Set compile mode |
 | `:CPCycleMode` | Cycle compile mode |
-| `:R` | Compile and run current C++/Java file |
+| `:R` | Compile and run current C/C++/Java/Rust file |
+| `:RCompile` | Compile/check current C/C++/Java/Rust file |
