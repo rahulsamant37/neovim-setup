@@ -940,27 +940,62 @@ vim.keymap.set('i', '<A-S-Up>', '<Esc>:t-1<CR>==gi', { silent = true, desc = 'Du
 vim.keymap.set('v', '<A-S-Down>', ":t'><CR>gv=gv", { silent = true, desc = 'Duplicate selection down' })
 vim.keymap.set('v', '<A-S-Up>', ":t'<-1<CR>gv=gv", { silent = true, desc = 'Duplicate selection up' })
 
-local function run_java_file()
+local function set_quickfix_lines(title, lines, efm)
+  local opts = {
+    title = title,
+    lines = lines,
+  }
+
+  if efm and efm ~= '' then
+    opts.efm = efm
+  end
+
+  vim.fn.setqflist({}, 'r', opts)
+  vim.cmd.copen()
+end
+
+local function get_current_file_context(prefix)
   local bufnr = vim.api.nvim_get_current_buf()
   local source_file = vim.api.nvim_buf_get_name(bufnr)
   if source_file == '' then
-    vim.notify('RunJava: save the file before compiling.', vim.log.levels.WARN)
-    return
+    vim.notify(prefix .. ': save the file before compiling.', vim.log.levels.WARN)
+    return nil
   end
 
-  if vim.bo[bufnr].modified then vim.cmd.write() end
+  if vim.bo[bufnr].modified then
+    vim.cmd.write()
+  end
 
   source_file = vim.fn.fnamemodify(source_file, ':p')
   local source_dir = vim.fn.fnamemodify(source_file, ':h')
   local source_base = vim.fn.fnamemodify(source_file, ':t:r')
-  local input_file = source_dir .. '/input.txt'
+
+  return {
+    bufnr = bufnr,
+    source_file = source_file,
+    source_dir = source_dir,
+    source_base = source_base,
+    input_file = source_dir .. '/input.txt',
+  }
+end
+
+local function compile_java_current_buffer(notify_success)
+  local ctx = get_current_file_context('RunJava')
+  if not ctx then
+    return false, nil
+  end
+
+  if vim.fn.executable('javac') ~= 1 then
+    vim.notify('RunJava: javac not found in PATH.', vim.log.levels.ERROR)
+    return false, nil
+  end
+
   local compile_output = vim.fn.tempname() .. '.javac.err'
   local build_dir = vim.fn.tempname() .. '_java_build'
-
   vim.fn.mkdir(build_dir, 'p')
 
   local package_name = ''
-  local source_lines = vim.fn.readfile(source_file)
+  local source_lines = vim.fn.readfile(ctx.source_file)
   for _, line in ipairs(source_lines) do
     local pkg = line:match('^%s*package%s+([%w_%.]+)%s*;')
     if pkg then
@@ -969,49 +1004,353 @@ local function run_java_file()
     end
   end
 
-  local main_class = source_base
-  if package_name ~= '' then main_class = package_name .. '.' .. source_base end
+  local main_class = ctx.source_base
+  if package_name ~= '' then
+    main_class = package_name .. '.' .. ctx.source_base
+  end
 
   local compile_cmd = string.format(
     'javac -d %s %s 2>%s',
     vim.fn.shellescape(build_dir),
-    vim.fn.shellescape(source_file),
+    vim.fn.shellescape(ctx.source_file),
     vim.fn.shellescape(compile_output)
   )
 
   vim.fn.system(compile_cmd)
   local compile_exit = vim.v.shell_error
 
+  local lines = {}
   if vim.fn.filereadable(compile_output) == 1 then
-    local lines = vim.fn.readfile(compile_output)
+    lines = vim.fn.readfile(compile_output)
     vim.fn.delete(compile_output)
-    if compile_exit ~= 0 then
-      vim.fn.setqflist({}, 'r', {
-        title = 'RunJava: javac errors',
-        lines = lines,
-        efm = '%f:%l:%c: %trror: %m,%f:%l:%c: %tarning: %m,%f:%l:%c: %tnote: %m,%f:%l: %trror: %m,%f:%l: %tarning: %m,%f:%l: %tnote: %m,%f:%l:%c: %m,%f:%l: %m',
-      })
-      vim.cmd.copen()
-      vim.notify('RunJava: compilation failed. See quickfix list.', vim.log.levels.ERROR)
-      vim.fn.delete(build_dir, 'rf')
+  end
+
+  if compile_exit ~= 0 then
+    if #lines == 0 then
+      lines = { 'javac failed, but no compiler output was captured.' }
+    end
+
+    set_quickfix_lines(
+      'RunJava: javac errors',
+      lines,
+      '%f:%l:%c: %trror: %m,%f:%l:%c: %tarning: %m,%f:%l:%c: %tnote: %m,%f:%l: %trror: %m,%f:%l: %tarning: %m,%f:%l: %tnote: %m,%f:%l:%c: %m,%f:%l: %m'
+    )
+    vim.notify('RunJava: compilation failed. See quickfix list.', vim.log.levels.ERROR)
+    vim.fn.delete(build_dir, 'rf')
+    return false, nil
+  end
+
+  vim.cmd.cclose()
+
+  if notify_success then
+    vim.notify('RunJava: compilation successful.', vim.log.levels.INFO)
+  end
+
+  return true, {
+    build_dir = build_dir,
+    main_class = main_class,
+    source_dir = ctx.source_dir,
+    input_file = ctx.input_file,
+  }
+end
+
+local function run_java_file()
+  local ok, result = compile_java_current_buffer(false)
+  if not ok or not result then
+    return
+  end
+
+  local run_cmd = string.format('java -cp %s %s', vim.fn.shellescape(result.build_dir), vim.fn.shellescape(result.main_class))
+  if vim.fn.filereadable(result.input_file) == 1 then
+    run_cmd = run_cmd .. ' < ' .. vim.fn.shellescape(result.input_file)
+  end
+
+  local run_script = run_cmd .. '; code=$?; rm -rf ' .. vim.fn.shellescape(result.build_dir) .. '; exit $code'
+  vim.cmd.vsplit()
+  vim.cmd('terminal sh -c ' .. vim.fn.shellescape(run_script))
+  vim.cmd.startinsert()
+end
+
+local function compile_java_file()
+  local ok, result = compile_java_current_buffer(true)
+  if result and result.build_dir then
+    vim.fn.delete(result.build_dir, 'rf')
+  end
+
+  if ok then
+    vim.cmd.cclose()
+  end
+end
+
+local function find_cargo_root(source_dir)
+  local cargo_files = vim.fs.find('Cargo.toml', {
+    path = source_dir,
+    upward = true,
+  })
+
+  if #cargo_files == 0 then
+    return nil
+  end
+
+  return vim.fn.fnamemodify(cargo_files[1], ':h')
+end
+
+local function list_contains(items, value)
+  for _, item in ipairs(items or {}) do
+    if item == value then
+      return true
+    end
+  end
+
+  return false
+end
+
+local function get_cargo_bin_target(cargo_root, source_file, source_base)
+  local metadata_cmd = string.format(
+    'cd %s && cargo metadata --format-version 1 --no-deps 2>/dev/null',
+    vim.fn.shellescape(cargo_root)
+  )
+
+  local output = vim.fn.system(metadata_cmd)
+  if vim.v.shell_error ~= 0 then
+    return nil, {}
+  end
+
+  local ok, decoded = pcall(vim.json.decode, output)
+  if not ok or type(decoded) ~= 'table' then
+    return nil, {}
+  end
+
+  local normalized_source = vim.fn.fnamemodify(source_file, ':p')
+  local available_bins = {}
+  local matched_bin = nil
+
+  for _, package in ipairs(decoded.packages or {}) do
+    for _, target in ipairs(package.targets or {}) do
+      local is_bin = false
+      for _, kind in ipairs(target.kind or {}) do
+        if kind == 'bin' then
+          is_bin = true
+          break
+        end
+      end
+
+      if is_bin and target.name then
+        if not list_contains(available_bins, target.name) then
+          table.insert(available_bins, target.name)
+        end
+
+        if target.src_path then
+          local src_path = vim.fn.fnamemodify(target.src_path, ':p')
+          if src_path == normalized_source then
+            matched_bin = target.name
+          end
+        end
+      end
+    end
+  end
+
+  table.sort(available_bins)
+
+  if matched_bin then
+    return matched_bin, available_bins
+  end
+
+  if source_base and source_base ~= '' and list_contains(available_bins, source_base) then
+    return source_base, available_bins
+  end
+
+  if #available_bins == 1 then
+    return available_bins[1], available_bins
+  end
+
+  return nil, available_bins
+end
+
+local function run_rust_cargo_target(cargo_root, ctx, bin_target)
+  local run_cmd = 'cargo run'
+  if bin_target and bin_target ~= '' then
+    run_cmd = run_cmd .. ' --bin ' .. vim.fn.shellescape(bin_target)
+  end
+
+  local project_input = cargo_root .. '/input.txt'
+  local selected_input = nil
+  if vim.fn.filereadable(ctx.input_file) == 1 then
+    selected_input = ctx.input_file
+  elseif vim.fn.filereadable(project_input) == 1 then
+    selected_input = project_input
+  end
+
+  if selected_input then
+    run_cmd = run_cmd .. ' < ' .. vim.fn.shellescape(selected_input)
+  end
+
+  local run_script = string.format('cd %s && %s', vim.fn.shellescape(cargo_root), run_cmd)
+  vim.cmd.vsplit()
+  vim.cmd('terminal sh -c ' .. vim.fn.shellescape(run_script))
+  vim.cmd.startinsert()
+end
+
+local function run_rust_file()
+  local ctx = get_current_file_context('RunRust')
+  if not ctx then
+    return
+  end
+
+  local cargo_root = find_cargo_root(ctx.source_dir)
+  if cargo_root then
+    if vim.fn.executable('cargo') ~= 1 then
+      vim.notify('RunRust: cargo not found in PATH.', vim.log.levels.ERROR)
       return
     end
-  elseif compile_exit ~= 0 then
-    vim.notify('RunJava: compilation failed, but no compiler output was captured.', vim.log.levels.ERROR)
-    vim.fn.delete(build_dir, 'rf')
+
+    local bin_target, available_bins = get_cargo_bin_target(cargo_root, ctx.source_file, ctx.source_base)
+    if bin_target then
+      run_rust_cargo_target(cargo_root, ctx, bin_target)
+      return
+    end
+
+    if #available_bins > 1 then
+      vim.ui.select(available_bins, { prompt = 'RunRust: select Cargo binary' }, function(choice)
+        if not choice then
+          vim.notify('RunRust: no Cargo binary selected.', vim.log.levels.INFO)
+          return
+        end
+
+        run_rust_cargo_target(cargo_root, ctx, choice)
+      end)
+      return
+    end
+
+    run_rust_cargo_target(cargo_root, ctx, nil)
+    return
+  end
+
+  if vim.fn.executable('rustc') ~= 1 then
+    vim.notify('RunRust: rustc not found in PATH.', vim.log.levels.ERROR)
+    return
+  end
+
+  local binary_path = vim.fn.tempname() .. '_rust_run'
+  local compile_output = vim.fn.tempname() .. '.rustc.err'
+
+  local compile_cmd = string.format(
+    'rustc %s -o %s 2>%s',
+    vim.fn.shellescape(ctx.source_file),
+    vim.fn.shellescape(binary_path),
+    vim.fn.shellescape(compile_output)
+  )
+
+  vim.fn.system(compile_cmd)
+  local compile_exit = vim.v.shell_error
+
+  local lines = {}
+  if vim.fn.filereadable(compile_output) == 1 then
+    lines = vim.fn.readfile(compile_output)
+    vim.fn.delete(compile_output)
+  end
+
+  if compile_exit ~= 0 then
+    if #lines == 0 then
+      lines = { 'rustc failed, but no compiler output was captured.' }
+    end
+
+    set_quickfix_lines('RunRust: rustc errors', lines)
+    vim.notify('RunRust: compilation failed. See quickfix list.', vim.log.levels.ERROR)
+    vim.fn.delete(binary_path)
     return
   end
 
   vim.cmd.cclose()
 
-  local run_cmd = string.format('java -cp %s %s', vim.fn.shellescape(build_dir), vim.fn.shellescape(main_class))
-  if vim.fn.filereadable(input_file) == 1 then run_cmd = run_cmd .. ' < ' .. vim.fn.shellescape(input_file) end
+  local run_cmd = vim.fn.shellescape(binary_path)
+  if vim.fn.filereadable(ctx.input_file) == 1 then
+    run_cmd = run_cmd .. ' < ' .. vim.fn.shellescape(ctx.input_file)
+  end
 
-  local run_script = run_cmd .. '; code=$?; rm -rf ' .. vim.fn.shellescape(build_dir) .. '; exit $code'
-
+  local run_script = run_cmd .. '; code=$?; rm -f ' .. vim.fn.shellescape(binary_path) .. '; exit $code'
   vim.cmd.vsplit()
   vim.cmd('terminal sh -c ' .. vim.fn.shellescape(run_script))
   vim.cmd.startinsert()
+end
+
+local function compile_rust_file()
+  local ctx = get_current_file_context('RunRust')
+  if not ctx then
+    return
+  end
+
+  local cargo_root = find_cargo_root(ctx.source_dir)
+  if cargo_root then
+    if vim.fn.executable('cargo') ~= 1 then
+      vim.notify('RunRust: cargo not found in PATH.', vim.log.levels.ERROR)
+      return
+    end
+
+    local bin_target = get_cargo_bin_target(cargo_root, ctx.source_file, ctx.source_base)
+    local check_cmd = 'cargo check'
+    if bin_target then
+      check_cmd = check_cmd .. ' --bin ' .. vim.fn.shellescape(bin_target)
+    end
+
+    local output = vim.fn.system(string.format('cd %s && %s 2>&1', vim.fn.shellescape(cargo_root), check_cmd))
+    if vim.v.shell_error ~= 0 then
+      local trimmed = vim.trim(output or '')
+      local lines
+      if trimmed == '' then
+        lines = { 'cargo check failed, but no compiler output was captured.' }
+      else
+        lines = vim.split(trimmed, '\n', { plain = true, trimempty = true })
+      end
+
+      set_quickfix_lines('RunRust: cargo check errors', lines)
+      vim.notify('RunRust: cargo check failed. See quickfix list.', vim.log.levels.ERROR)
+      return
+    end
+
+    vim.cmd.cclose()
+    vim.notify('RunRust: cargo check passed.', vim.log.levels.INFO)
+    return
+  end
+
+  if vim.fn.executable('rustc') ~= 1 then
+    vim.notify('RunRust: rustc not found in PATH.', vim.log.levels.ERROR)
+    return
+  end
+
+  local binary_path = vim.fn.tempname() .. '_rust_check'
+  local compile_output = vim.fn.tempname() .. '.rustc.err'
+
+  local compile_cmd = string.format(
+    'rustc %s -o %s 2>%s',
+    vim.fn.shellescape(ctx.source_file),
+    vim.fn.shellescape(binary_path),
+    vim.fn.shellescape(compile_output)
+  )
+
+  vim.fn.system(compile_cmd)
+  local compile_exit = vim.v.shell_error
+
+  local lines = {}
+  if vim.fn.filereadable(compile_output) == 1 then
+    lines = vim.fn.readfile(compile_output)
+    vim.fn.delete(compile_output)
+  end
+
+  if compile_exit ~= 0 then
+    if #lines == 0 then
+      lines = { 'rustc failed, but no compiler output was captured.' }
+    end
+
+    set_quickfix_lines('RunRust: rustc errors', lines)
+    vim.notify('RunRust: compilation failed. See quickfix list.', vim.log.levels.ERROR)
+    vim.fn.delete(binary_path)
+    return
+  end
+
+  vim.fn.delete(binary_path)
+  vim.cmd.cclose()
+  vim.notify('RunRust: compilation successful.', vim.log.levels.INFO)
 end
 
 local function run_source_file()
@@ -1031,10 +1370,54 @@ local function run_source_file()
     return
   end
 
+  if ft == 'rust' then
+    run_rust_file()
+    return
+  end
+
   vim.notify('R: unsupported filetype: ' .. ft, vim.log.levels.WARN)
 end
 
-vim.api.nvim_create_user_command('R', run_source_file, { desc = 'Compile and run current C++/Java file' })
+local function compile_source_file()
+  local ft = vim.bo.filetype
+  if ft == 'cpp' or ft == 'c' then
+    local ok, cp = pcall(require, 'custom.cp-config')
+    if ok and cp and cp.compile_only then
+      cp.compile_only()
+    else
+      vim.notify('RCompile: could not load custom.cp-config compiler.', vim.log.levels.ERROR)
+    end
+    return
+  end
+
+  if ft == 'java' then
+    compile_java_file()
+    return
+  end
+
+  if ft == 'rust' then
+    compile_rust_file()
+    return
+  end
+
+  vim.notify('RCompile: unsupported filetype: ' .. ft, vim.log.levels.WARN)
+end
+
+vim.api.nvim_create_autocmd('FileType', {
+  group = vim.api.nvim_create_augroup('rust-run-compile-keymaps', { clear = true }),
+  pattern = 'rust',
+  callback = function(event)
+    local opts = { buffer = event.buf, silent = true }
+
+    vim.keymap.set('n', '<F5>', run_source_file, vim.tbl_extend('force', opts, { desc = 'Run current Rust file/project (:R)' }))
+    vim.keymap.set('n', '<F9>', compile_source_file, vim.tbl_extend('force', opts, { desc = 'Compile/check Rust (:RCompile)' }))
+    vim.keymap.set('n', '<leader>cr', run_source_file, vim.tbl_extend('force', opts, { desc = '[C]ode [R]un (:R)' }))
+    vim.keymap.set('n', '<leader>cc', compile_source_file, vim.tbl_extend('force', opts, { desc = '[C]ode [C]ompile (:RCompile)' }))
+  end,
+})
+
+vim.api.nvim_create_user_command('R', run_source_file, { desc = 'Compile and run current C/C++/Java/Rust file' })
+vim.api.nvim_create_user_command('RCompile', compile_source_file, { desc = 'Compile/check current C/C++/Java/Rust file' })
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=4 sts=4 sw=4 et

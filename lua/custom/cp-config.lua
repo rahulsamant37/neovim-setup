@@ -373,6 +373,39 @@ local function prompt_compile_mode()
   end)
 end
 
+-- Run compiled binary interactively (prompt for input; do NOT auto-use input1.txt)
+-- Run compiled binary interactively: compile, then open right-side stacked
+-- input/output panes. Left stays as the source file; top-right is editable
+-- input, bottom-right shows the program output. Use <F7> or <leader>r in
+-- the input pane to run the program (output replaces bottom-right contents).
+local function run_interactive()
+  -- Get context and compile WITHOUT -DLOCAL so program reads from stdin.
+  local ctx = get_cpp_context()
+  if not ctx then
+    return
+  end
+
+  local profile = get_compile_profile_for_buffer(ctx.bufnr)
+  local interactive_flags = profile.flags:gsub('%-DLOCAL%s*', '')
+
+  local ok = compile_source_file(ctx.source_file, ctx.binary_path, profile.compiler, interactive_flags, 'RunCpp (interactive) compile errors')
+  if not ok then
+    vim.notify('RunCpp: interactive compilation failed. See quickfix list.', vim.log.levels.ERROR)
+    return
+  end
+
+  -- Build a wrapper script that runs the binary (interactive), then
+  -- prints a marker and waits for a key so the terminal doesn't immediately
+  -- vanish after the program exits.
+  local bin = vim.fn.shellescape(ctx.binary_path)
+  local wrapper = string.format('%s; code=$?; echo; echo "[Process exited $code]"; read -n 1 -s -r -p "Press any key to close..."', bin)
+
+  vim.cmd('vsplit')
+  -- Use bash -lc so the wrapper runs in a shell and the read builtin is available.
+  vim.cmd('terminal bash -lc ' .. vim.fn.shellescape(wrapper))
+  vim.cmd.startinsert()
+end
+
 -- Create/open test files using Competitive Companion naming.
 local function create_test_files()
   local ctx = get_cpp_context()
@@ -667,6 +700,8 @@ vim.api.nvim_create_autocmd('FileType', {
     -- Run with custom input
     vim.keymap.set('n', '<F6>', run_with_input, vim.tbl_extend('force', opts, { desc = 'Run with Input' }))
     vim.keymap.set('n', '<leader>ci', run_with_input, vim.tbl_extend('force', opts, { desc = '[C]ustom [I]nput' }))
+    vim.keymap.set('n', '<leader>r', run_interactive, vim.tbl_extend('force', opts, { desc = 'Run interactively (:CPRunInteractive)' }))
+    vim.keymap.set('n', '<F7>', run_interactive, vim.tbl_extend('force', opts, { desc = 'Run interactively (:CPRunInteractive)' }))
 
     -- Test file management
     vim.keymap.set('n', '<leader>t', create_test_files, vim.tbl_extend('force', opts, { desc = '[T]est files' }))
@@ -710,6 +745,7 @@ end, { desc = '[A]lgorithms revise [L]ist' })
 -- ==================== COMMANDS ====================
 
 vim.api.nvim_create_user_command('CPRun', compile_and_run_cpp, { desc = 'Compile and run C++ file' })
+vim.api.nvim_create_user_command('CPRunInteractive', run_interactive, { desc = 'Run compiled binary interactively (prompt for input; does NOT auto-use input1.txt)' })
 vim.api.nvim_create_user_command('CPCompile', compile_cpp, { desc = 'Compile C++ file' })
 vim.api.nvim_create_user_command('CPTest', create_test_files, { desc = 'Create/open test files' })
 vim.api.nvim_create_user_command('CPDiff', compare_output, { desc = 'Compare output.txt with expected output' })
