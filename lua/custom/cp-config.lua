@@ -25,6 +25,7 @@ local c_compile_mode_flags = {
 }
 
 local stress_compile_flags = '-std=c++23 -O2 -pipe -Wall -Wextra -Wshadow'
+local c_stress_compile_flags = '-std=c17 -O2 -pipe -Wall -Wextra -Wshadow'
 
 local compile_mode = vim.g.cp_compile_mode
 if not compile_modes[compile_mode] then
@@ -41,10 +42,54 @@ local function get_mode(mode_name)
   return compile_modes.fast, 'fast'
 end
 
+local function is_c_source(source_file)
+  return vim.fn.fnamemodify(source_file, ':e'):lower() == 'c'
+end
+
+local function strip_local_define(flags)
+  return flags:gsub('%-DLOCAL%s*', '')
+end
+
+local function get_compile_profile_for_source(source_file, mode_name)
+  local mode, selected_mode = get_mode(mode_name)
+
+  if is_c_source(source_file) then
+    return {
+      compiler = 'gcc',
+      flags = c_compile_mode_flags[selected_mode] or c_compile_mode_flags.fast,
+      label = mode.label,
+    }
+  end
+
+  return {
+    compiler = 'g++',
+    flags = mode.flags,
+    label = mode.label,
+  }
+end
+
+local function get_stress_compile_profile_for_source(source_file)
+  if is_c_source(source_file) then
+    return {
+      compiler = 'gcc',
+      flags = c_stress_compile_flags,
+    }
+  end
+
+  return {
+    compiler = 'g++',
+    flags = stress_compile_flags,
+  }
+end
+
 local function get_compile_profile_for_buffer(bufnr, mode_name)
+  local source_file = vim.api.nvim_buf_get_name(bufnr)
+  if source_file ~= '' then
+    return get_compile_profile_for_source(source_file, mode_name)
+  end
+
   local mode, selected_mode = get_mode(mode_name)
   local ft = vim.bo[bufnr].filetype
-
   if ft == 'c' then
     return {
       compiler = 'gcc',
@@ -386,11 +431,11 @@ local function run_interactive()
   end
 
   local profile = get_compile_profile_for_buffer(ctx.bufnr)
-  local interactive_flags = profile.flags:gsub('%-DLOCAL%s*', '')
+  local interactive_flags = strip_local_define(profile.flags)
 
-  local ok = compile_source_file(ctx.source_file, ctx.binary_path, profile.compiler, interactive_flags, 'RunCpp (interactive) compile errors')
+  local ok = compile_source_file(ctx.source_file, ctx.binary_path, profile.compiler, interactive_flags, 'CPRun (interactive) compile errors')
   if not ok then
-    vim.notify('RunCpp: interactive compilation failed. See quickfix list.', vim.log.levels.ERROR)
+    vim.notify('CPRun: interactive compilation failed. See quickfix list.', vim.log.levels.ERROR)
     return
   end
 
@@ -525,7 +570,8 @@ end
 
 -- Create new CP file from template.
 local function new_cp_file()
-  vim.ui.input({ prompt = 'Enter filename (without .cpp): ' }, function(filename)
+  local default_extension = vim.bo.filetype == 'c' and 'c' or 'cpp'
+  vim.ui.input({ prompt = 'Enter filename (without .' .. default_extension .. '): ' }, function(filename)
     if not filename then
       return
     end
@@ -536,8 +582,15 @@ local function new_cp_file()
     end
 
     local filepath = filename
-    if not filepath:match('%.cpp$') then
-      filepath = filepath .. '.cpp'
+    if not filepath:match('%.[%w_]+$') then
+      filepath = filepath .. '.' .. default_extension
+    end
+
+    local extension = vim.fn.fnamemodify(filepath, ':e'):lower()
+    local is_supported = extension == 'c' or extension == 'cpp' or extension == 'cc' or extension == 'cxx'
+    if not is_supported then
+      vim.notify('CPNew supports .c, .cpp, .cc, and .cxx files.', vim.log.levels.ERROR)
+      return
     end
 
     vim.cmd('edit ' .. vim.fn.fnameescape(filepath))
@@ -565,7 +618,7 @@ local function new_cp_file()
 end
 
 -- Stress test usage:
--- :CPStress [generator.cpp] [brute.cpp] [iterations]
+-- :CPStress [generator.c/cpp] [brute.c/cpp] [iterations]
 local function stress_test(opts)
   opts = opts or {}
   local args = opts.fargs or {}
@@ -575,8 +628,9 @@ local function stress_test(opts)
     return
   end
 
-  local generator_src = args[1] and vim.fn.fnamemodify(args[1], ':p') or (ctx.source_dir .. '/gen.cpp')
-  local brute_src = args[2] and vim.fn.fnamemodify(args[2], ':p') or (ctx.source_dir .. '/brute.cpp')
+  local default_stress_extension = is_c_source(ctx.source_file) and 'c' or 'cpp'
+  local generator_src = args[1] and vim.fn.fnamemodify(args[1], ':p') or (ctx.source_dir .. '/gen.' .. default_stress_extension)
+  local brute_src = args[2] and vim.fn.fnamemodify(args[2], ':p') or (ctx.source_dir .. '/brute.' .. default_stress_extension)
   local iterations = tonumber(args[3]) or 200
 
   if iterations < 1 then
@@ -594,26 +648,28 @@ local function stress_test(opts)
     return
   end
 
-  local mode = get_mode()
   -- Stress testing must avoid LOCAL freopen redirection to compare stdin/stdout correctly.
-  local solution_flags = mode.flags:gsub('%-DLOCAL%s*', '')
+  local solution_profile = get_compile_profile_for_source(ctx.source_file)
+  local solution_flags = strip_local_define(solution_profile.flags)
+  local generator_profile = get_stress_compile_profile_for_source(generator_src)
+  local brute_profile = get_stress_compile_profile_for_source(brute_src)
   local solution_bin = ctx.source_dir .. '/.stress_solution'
   local generator_bin = ctx.source_dir .. '/.stress_generator'
   local brute_bin = ctx.source_dir .. '/.stress_brute'
 
   vim.notify('Compiling stress-test binaries...', vim.log.levels.INFO)
 
-  if not compile_source_file(ctx.source_file, solution_bin, 'g++', solution_flags, 'Stress Test: solution compile errors') then
+  if not compile_source_file(ctx.source_file, solution_bin, solution_profile.compiler, solution_flags, 'Stress Test: solution compile errors') then
     vim.notify('Stress test aborted: solution compilation failed.', vim.log.levels.ERROR)
     return
   end
 
-  if not compile_source_file(generator_src, generator_bin, 'g++', stress_compile_flags, 'Stress Test: generator compile errors') then
+  if not compile_source_file(generator_src, generator_bin, generator_profile.compiler, generator_profile.flags, 'Stress Test: generator compile errors') then
     vim.notify('Stress test aborted: generator compilation failed.', vim.log.levels.ERROR)
     return
   end
 
-  if not compile_source_file(brute_src, brute_bin, 'g++', stress_compile_flags, 'Stress Test: brute compile errors') then
+  if not compile_source_file(brute_src, brute_bin, brute_profile.compiler, brute_profile.flags, 'Stress Test: brute compile errors') then
     vim.notify('Stress test aborted: brute compilation failed.', vim.log.levels.ERROR)
     return
   end
@@ -744,16 +800,16 @@ end, { desc = '[A]lgorithms revise [L]ist' })
 
 -- ==================== COMMANDS ====================
 
-vim.api.nvim_create_user_command('CPRun', compile_and_run_cpp, { desc = 'Compile and run C++ file' })
+vim.api.nvim_create_user_command('CPRun', compile_and_run_cpp, { desc = 'Compile and run C/C++ file' })
 vim.api.nvim_create_user_command('CPRunInteractive', run_interactive, { desc = 'Run compiled binary interactively (prompt for input; does NOT auto-use input1.txt)' })
-vim.api.nvim_create_user_command('CPCompile', compile_cpp, { desc = 'Compile C++ file' })
+vim.api.nvim_create_user_command('CPCompile', compile_cpp, { desc = 'Compile C/C++ file' })
 vim.api.nvim_create_user_command('CPTest', create_test_files, { desc = 'Create/open test files' })
 vim.api.nvim_create_user_command('CPDiff', compare_output, { desc = 'Compare output.txt with expected output' })
 vim.api.nvim_create_user_command('CPClear', clear_test_residue, { desc = 'Delete CP artifacts (input*/output*/expected* + executable)' })
-vim.api.nvim_create_user_command('CPNew', new_cp_file, { desc = 'Create new CP file from template' })
+vim.api.nvim_create_user_command('CPNew', new_cp_file, { desc = 'Create new C/C++ CP file from template' })
 vim.api.nvim_create_user_command('CPStress', stress_test, {
   nargs = '*',
-  desc = 'Stress test: :CPStress [generator.cpp] [brute.cpp] [iterations]',
+  desc = 'Stress test: :CPStress [generator.c/cpp] [brute.c/cpp] [iterations]',
 })
 vim.api.nvim_create_user_command('CPMode', function(opts)
   set_compile_mode(vim.trim(opts.args))
@@ -780,10 +836,10 @@ end, { desc = 'Open CP-Algorithms revise-later list' })
 
 -- ==================== AUTO-COMMANDS ====================
 
--- Auto-create input1.txt/output1.txt when opening a new .cpp file.
+-- Auto-create input1.txt/output1.txt when opening a new C/C++ file.
 vim.api.nvim_create_autocmd('BufNewFile', {
-  group = vim.api.nvim_create_augroup('cp-new-cpp-files', { clear = true }),
-  pattern = '*.cpp',
+  group = vim.api.nvim_create_augroup('cp-new-c-files', { clear = true }),
+  pattern = { '*.cpp', '*.cc', '*.cxx', '*.c' },
   callback = function()
     local source_dir = vim.fn.expand('%:p:h')
     local input_file = source_dir .. '/input1.txt'
