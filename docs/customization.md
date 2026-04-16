@@ -138,9 +138,9 @@ Switch mode in Neovim:
 
 Why compile modes are separated: you can optimize for speed, debugging, or submissions without manually rewriting commands each time.
 
-## 6) Add Your Own C++ Snippet
+## 6) Add Your Own C/C++ Snippet
 
-Edit `lua/snippets/cpp.lua` and add a snippet entry.
+Edit `lua/snippets/c.lua` (for C) or `lua/snippets/cpp.lua` (for C++) and add a snippet entry.
 
 Example snippet:
 
@@ -180,4 +180,4 @@ Why this helps: larger projects often keep compile metadata in separate build di
 - Prefer small plugin files over giant inline configs.
 - Add clear `desc` fields to keymaps.
 - Validate after changes with `:checkhealth` and `:Lazy`.
-- Test language-specific changes in real files (for example `.cpp`) to confirm filetype-local mappings and commands load as expected.
+- Test language-specific changes in real files (for example `.c` or `.cpp`) to confirm filetype-local mappings and commands load as expected.
