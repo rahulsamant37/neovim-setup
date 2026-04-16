@@ -1,6 +1,6 @@
 # Neovim Setup
 
-Personal Neovim configuration built on kickstart.nvim, focused on a clean Lua setup and a fast C++ competitive programming workflow.
+Personal Neovim configuration built on kickstart.nvim, focused on a clean Lua setup and a fast C/C++ competitive programming workflow.
 
 Repository: https://github.com/rahulsamant37/neovim-setup
 
@@ -9,7 +9,7 @@ Repository: https://github.com/rahulsamant37/neovim-setup
 This configuration is for users who want:
 
 - A practical Neovim base with modern defaults
-- A CP-focused C++ workflow (compile, run, test, compare)
+- A CP-focused C/C++ workflow (compile, run, test, compare)
 - A modular structure that is easy to understand and extend
 
 It is not a full Neovim distribution. It is a personal setup meant to be forked and adapted.
@@ -34,7 +34,7 @@ It is not a full Neovim distribution. It is a personal setup meant to be forked 
 - Test file management helpers
 - Output comparison helpers
 - Built-in stress testing command
-- Multiple C++ snippet templates
+- Multiple C/C++ snippet templates
 
 ## Installation
 
@@ -60,8 +60,9 @@ Required tools:
 - unzip
 - rg (ripgrep)
 
-C++ workflow tools:
+C/C++ workflow tools:
 
+- gcc (C17 recommended)
 - g++ (C++23 recommended)
 - clangd (recommended)
 - clang-format (recommended for consistent formatting)
@@ -73,7 +74,7 @@ Install options by environment:
 
 ```bash
 sudo apt update
-sudo apt install -y git make unzip ripgrep g++ clangd clang-format
+sudo apt install -y git make unzip ripgrep gcc g++ clangd clang-format
 ```
 
 </details>
@@ -82,7 +83,7 @@ sudo apt install -y git make unzip ripgrep g++ clangd clang-format
 <summary>Fedora</summary>
 
 ```bash
-sudo dnf install -y git make unzip ripgrep gcc-c++ clang-tools-extra
+sudo dnf install -y git make unzip ripgrep gcc gcc-c++ clang-tools-extra
 ```
 
 </details>
@@ -138,7 +139,7 @@ Inside Neovim:
 
 ### Competitive programming
 
-1. Open a .cpp file.
+1. Open a .c or .cpp file.
 2. Expand a snippet such as cpbasic or cpfull.
 3. Press F5 to compile and run.
 4. Use Space t to create/open test files.
@@ -147,9 +148,15 @@ Inside Neovim:
 7. Use Space c m to cycle compile mode (fast/debug/submit).
 8. Use Space c s to run stress tests.
 
-## Snippet Triggers (C++)
+## Snippet Triggers (C/C++)
 
-Available snippet triggers in lua/snippets/cpp.lua:
+Available C snippet triggers in lua/snippets/c.lua:
+
+- cpbasic
+- cpa
+- basicc
+
+Available C++ snippet triggers in lua/snippets/cpp.lua:
 
 - cpbasic
 - cpfull
@@ -186,7 +193,7 @@ Available snippet triggers in lua/snippets/cpp.lua:
 | Space c d | Compare output.txt with output1.txt |
 | Space x | Delete generated artifacts: input*.txt, output*.txt, expected*.txt (including numbered files), and current-file executable |
 | Space c n | Create new CP file from snippet template |
-| Space c s | Run stress test (defaults: gen.cpp + brute.cpp) |
+| Space c s | Run stress test (defaults: gen.c/cpp + brute.c/cpp) |
 | Space c m | Cycle compile mode (fast/debug/submit) |
 | Space c M | Choose compile mode from menu |
 
@@ -197,7 +204,7 @@ Available snippet triggers in lua/snippets/cpp.lua:
 | :CPMode fast\|debug\|submit | Set compile mode |
 | :CPCycleMode | Cycle compile mode |
 | :CPClear | Delete generated artifacts: input*.txt, output*.txt, expected*.txt (including numbered files), and current-file executable |
-| :CPStress [gen.cpp] [brute.cpp] [iters] | Run stress tests |
+| :CPStress [gen.c/cpp] [brute.c/cpp] [iters] | Run stress tests |
 
 ## Project Structure
 
@@ -216,6 +223,7 @@ Available snippet triggers in lua/snippets/cpp.lua:
     │   ├── health.lua
     │   └── plugins
     └── snippets
+        ├── c.lua
         └── cpp.lua
 ```
 
@@ -224,8 +232,8 @@ Available snippet triggers in lua/snippets/cpp.lua:
 - init.lua: global options, keymaps, and plugin bootstrap
 - lua/custom/cp-config.lua: CP functions and keymaps
 - lua/custom/plugins/init.lua: personal plugin list
-- lua/custom/plugins/cp-setup.lua: C++ LSP/treesitter settings
-- lua/snippets/cpp.lua: C++ templates/snippets
+- lua/custom/plugins/cp-setup.lua: C/C++ LSP/treesitter settings
+- lua/snippets/c.lua and lua/snippets/cpp.lua: C/C++ templates/snippets
 
 ## Optional: Run in Parallel with Existing Neovim Config
 
@@ -240,9 +248,9 @@ NVIM_APPNAME=nvim-rahul nvim
 
 - Run :Lazy sync if plugins are missing
 - Run :checkhealth to diagnose dependency issues
-- If C++ LSP is missing, verify clangd is installed and in PATH
+- If C/C++ LSP is missing, verify clangd is installed and in PATH
 - If C/C++ formatting does not work, verify clang-format is installed and in PATH
-- If compile/run fails, verify g++ installation and PATH
+- If compile/run fails, verify gcc/g++ installation and PATH
 
 ## Notes
 
