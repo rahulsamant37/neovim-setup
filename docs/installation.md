@@ -28,7 +28,8 @@ rg --version
 
 | Tool | Why it is needed |
 | --- | --- |
-| `g++` | Compile C/C++ solutions (`<F5>`, `<F9>`, `:CPRun`) |
+| `gcc` | Compile C solutions (`<F5>`, `<F9>`, `:CPRun`) |
+| `g++` | Compile C++ solutions (`<F5>`, `<F9>`, `:CPRun`) |
 | `clangd` | C/C++ language intelligence (LSP) |
 | `clang-format` | C/C++ formatting with 4-space style |
 
@@ -46,13 +47,13 @@ Ubuntu/Debian:
 
 ```bash
 sudo apt update
-sudo apt install -y neovim git make unzip ripgrep g++ clangd clang-format
+sudo apt install -y neovim git make unzip ripgrep gcc g++ clangd clang-format
 ```
 
 Fedora:
 
 ```bash
-sudo dnf install -y neovim git make unzip ripgrep gcc-c++ clang-tools-extra
+sudo dnf install -y neovim git make unzip ripgrep gcc gcc-c++ clang-tools-extra
 ```
 
 Arch Linux:
@@ -117,7 +118,7 @@ Why this matters:
 ```bash
 mkdir -p ~/cp-smoke
 cd ~/cp-smoke
-nvim main.cpp
+nvim main.c
 ```
 
 Inside Neovim:
@@ -176,15 +177,17 @@ Fix:
 ```bash
 g++ --version
 which g++
+gcc --version
+which gcc
 ```
 
-Ensure `g++` is installed and available in `PATH`.
+Ensure `gcc`/`g++` are installed and available in `PATH`.
 
 ### LSP for C/C++ is missing
 
 Symptom:
 
-- No diagnostics/completion for `.cpp`.
+- No diagnostics/completion for `.c` or `.cpp`.
 
 Fix:
 
