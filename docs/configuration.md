@@ -37,6 +37,7 @@ Why this is effective:
 │   │       ├── lint.lua
 │   │       └── neo-tree.lua
 │   └── snippets
+│       ├── c.lua
 │       └── cpp.lua
 └── README.md
 ```
@@ -49,7 +50,7 @@ Why this is effective:
 | `lua/custom/cp-config.lua` | C/C++ compile/run/test/stress workflow, CP commands, CP keymaps | Keeps domain-specific workflow out of general editor config |
 | `lua/custom/plugins/init.lua` | Personal plugin additions (Fugitive, Comment.nvim) | Clean extension area with low merge conflict risk |
 | `lua/custom/plugins/cp-setup.lua` | `clangd` customization for C/C++ | Keeps CP/LSP tuning separate from general LSP setup |
-| `lua/snippets/cpp.lua` | C++ snippet templates (`cpbasic`, `cpfull`, etc.) | Fast contest/problem boilerplate generation |
+| `lua/snippets/c.lua` + `lua/snippets/cpp.lua` | C/C++ snippet templates (`cpbasic`, `cpa`, `cpfull`, etc.) | Fast contest/problem boilerplate generation |
 | `lua/kickstart/health.lua` | Health checks for dependencies | Easier diagnostics via `:checkhealth` |
 | `lua/kickstart/plugins/*.lua` | Optional plugin modules | Turn features on/off without deleting code |
 | `lazy-lock.json` | Exact plugin versions | Reproducible plugin state across machines |
@@ -150,6 +151,12 @@ require('luasnip.loaders.from_lua').load {
   paths = '~/.config/nvim/lua/snippets',
 }
 ```
+
+Available C triggers include:
+
+- `cpbasic`
+- `cpa`
+- `basicc`
 
 Available C++ triggers include:
 
