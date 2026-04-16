@@ -123,13 +123,13 @@ Or keymaps:
 
 Common reasons:
 
-- Missing `gen.cpp` or `brute.cpp`
+- Missing `gen.c`/`gen.cpp` or `brute.c`/`brute.cpp`
 - Compilation errors in any of the three sources (solution/generator/brute)
 
 Run with explicit args to avoid path confusion:
 
 ```vim
-:CPStress gen.cpp brute.cpp 300
+:CPStress gen.c brute.c 300
 ```
 
 ## LSP, Formatting, and Snippets
@@ -168,7 +168,7 @@ Ensure you expand snippets with your snippet key flow (completion/snippet jump).
 Helpful checks:
 
 - `LuaSnip` is installed (`:Lazy`)
-- You are in a C++ buffer (`:set filetype?` shows `cpp`)
+- You are in a C/C++ buffer (`:set filetype?` shows `c` or `cpp`)
 - Try `<C-s>` (insert mode mapping in C/C++ buffers)
 
 ## Troubleshooting and Recovery
