@@ -84,12 +84,12 @@ Works in normal mode and visual mode.
 
 This is the core workflow this configuration is designed for.
 
-### Example: Solve a C++ problem end-to-end
+### Example: Solve a C/C++ problem end-to-end
 
 ```bash
 mkdir -p ~/cp/abc-100
 cd ~/cp/abc-100
-nvim main.cpp
+nvim main.c
 ```
 
 Inside Neovim:
@@ -127,13 +127,13 @@ Set mode explicitly:
 Command:
 
 ```vim
-:CPStress [gen.cpp] [brute.cpp] [iterations]
+:CPStress [gen.c/cpp] [brute.c/cpp] [iterations]
 ```
 
 Real example:
 
 ```vim
-:CPStress gen.cpp brute.cpp 500
+:CPStress gen.c brute.c 500
 ```
 
 Why this is useful: it catches corner cases by comparing your solution against a trusted brute-force implementation over many generated inputs.
@@ -184,8 +184,8 @@ Rust keymaps in Rust buffers:
 | --- | --- |
 | `:Lazy` | Plugin manager UI |
 | `:checkhealth` | Environment diagnostics |
-| `:CPRun` | Compile and run C++ |
-| `:CPCompile` | Compile only |
+| `:CPRun` | Compile and run C/C++ |
+| `:CPCompile` | Compile C/C++ only |
 | `:CPTest` | Create/open test files |
 | `:CPDiff` | Compare `output.txt` with expected output |
 | `:CPClear` | Delete generated artifacts: `input*.txt`, `output*.txt`, `expected*.txt` (including numbered files), and current-file executable |
