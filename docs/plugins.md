@@ -104,4 +104,4 @@ Why use this approach: optional modules stay versioned and ready, but do not add
 
 - `neovim/nvim-lspconfig` is extended in `lua/custom/plugins/cp-setup.lua` to configure `clangd` with C/C++-friendly defaults.
 - Formatting for C/C++ is routed through `conform.nvim` and `clang-format` for predictable style output.
-- Snippet templates are powered by `LuaSnip` and loaded from `lua/snippets/cpp.lua`.
+- Snippet templates are powered by `LuaSnip` and loaded from `lua/snippets/c.lua` and `lua/snippets/cpp.lua`.
