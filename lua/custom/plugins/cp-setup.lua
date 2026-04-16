@@ -2,7 +2,7 @@
 -- This file contains CP-specific configurations and keybindings
 
 return {
-  -- clangd LSP for C++ (already configured in main init.lua, just enabling it)
+  -- clangd LSP for C/C++ (already configured in main init.lua, just enabling it)
   {
     'neovim/nvim-lspconfig',
     opts = function()
