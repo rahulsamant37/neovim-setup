@@ -179,7 +179,7 @@ Global helper mapping:
 
 ### CP keymap example
 
-1. Open `main.cpp`
+1. Open `main.c` or `main.cpp`
 2. Press `<leader>t` to open `input1.txt` and `output1.txt`
 3. Press `<F5>` to compile and run
 4. Press `<leader>cd` to compare generated `output.txt` with expected output
@@ -205,13 +205,13 @@ Rust run behavior:
 
 | Command | Action |
 | --- | --- |
-| `:CPRun` | Compile and run C++ |
-| `:CPCompile` | Compile only |
+| `:CPRun` | Compile and run C/C++ |
+| `:CPCompile` | Compile C/C++ only |
 | `:CPRunInteractive` | Run C/C++ binary interactively |
 | `:CPTest` | Create/open test files |
 | `:CPDiff` | Compare output with expected file |
 | `:CPClear` | Delete generated artifacts: input*.txt, output*.txt, expected*.txt (including numbered files), and current-file executable |
-| `:CPNew` | New C++ file from template |
+| `:CPNew` | New C/C++ file from template |
 | `:CPStress ...` | Stress test solution |
 | `:CPMode fast|debug|submit` | Set compile mode |
 | `:CPCycleMode` | Cycle compile mode |
