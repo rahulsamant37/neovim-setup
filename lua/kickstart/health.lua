@@ -19,18 +19,21 @@ local check_version = function()
   end
 end
 
+local function check_executable(exe)
+  if vim.fn.executable(exe) == 1 then
+    vim.health.ok(string.format("Found executable: '%s'", exe))
+  else
+    vim.health.warn(string.format("Could not find executable: '%s'", exe))
+  end
+end
+
+local required_executables = { 'git', 'make', 'unzip', 'rg' }
+
 local check_external_reqs = function()
   -- Basic utils: `git`, `make`, `unzip`
-  for _, exe in ipairs { 'git', 'make', 'unzip', 'rg' } do
-    local is_executable = vim.fn.executable(exe) == 1
-    if is_executable then
-      vim.health.ok(string.format("Found executable: '%s'", exe))
-    else
-      vim.health.warn(string.format("Could not find executable: '%s'", exe))
-    end
+  for _, exe in ipairs(required_executables) do
+    check_executable(exe)
   end
-
-  return true
 end
 
 return {
