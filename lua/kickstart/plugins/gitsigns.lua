@@ -19,27 +19,26 @@ return {
         vim.keymap.set(mode, l, r, opts)
       end
 
-      -- Navigation
-      map('n', ']c', function()
+      local function nav_hunk(direction, fallback_key)
         if vim.wo.diff then
-          vim.cmd.normal { ']c', bang = true }
+          vim.cmd.normal { fallback_key, bang = true }
         else
-          gitsigns.nav_hunk 'next'
+          gitsigns.nav_hunk(direction)
         end
-      end, { desc = 'Jump to next git [c]hange' })
+      end
 
-      map('n', '[c', function()
-        if vim.wo.diff then
-          vim.cmd.normal { '[c', bang = true }
-        else
-          gitsigns.nav_hunk 'prev'
-        end
-      end, { desc = 'Jump to previous git [c]hange' })
+      local function visual_range()
+        return { vim.fn.line '.', vim.fn.line 'v' }
+      end
+
+      -- Navigation
+      map('n', ']c', function() nav_hunk('next', ']c') end, { desc = 'Jump to next git [c]hange' })
+      map('n', '[c', function() nav_hunk('prev', '[c') end, { desc = 'Jump to previous git [c]hange' })
 
       -- Actions
       -- visual mode
-      map('v', '<leader>hs', function() gitsigns.stage_hunk { vim.fn.line '.', vim.fn.line 'v' } end, { desc = 'git [s]tage hunk' })
-      map('v', '<leader>hr', function() gitsigns.reset_hunk { vim.fn.line '.', vim.fn.line 'v' } end, { desc = 'git [r]eset hunk' })
+      map('v', '<leader>hs', function() gitsigns.stage_hunk(visual_range()) end, { desc = 'git [s]tage hunk' })
+      map('v', '<leader>hr', function() gitsigns.reset_hunk(visual_range()) end, { desc = 'git [r]eset hunk' })
       -- normal mode
       map('n', '<leader>hs', gitsigns.stage_hunk, { desc = 'git [s]tage hunk' })
       map('n', '<leader>hr', gitsigns.reset_hunk, { desc = 'git [r]eset hunk' })
