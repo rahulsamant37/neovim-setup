@@ -6,6 +6,20 @@
 -- be extended to other languages as well. That's why it's called
 -- kickstart.nvim and not kitchen-sink.nvim ;)
 
+local function dap_action(method)
+  return function()
+    require('dap')[method]()
+  end
+end
+
+local function set_breakpoint_condition()
+  require('dap').set_breakpoint(vim.fn.input 'Breakpoint condition: ')
+end
+
+local function toggle_dapui()
+  require('dapui').toggle()
+end
+
 ---@module 'lazy'
 ---@type LazySpec
 return {
@@ -28,18 +42,19 @@ return {
   },
   keys = {
     -- Basic debugging keymaps, feel free to change to your liking!
-    { '<F5>', function() require('dap').continue() end, desc = 'Debug: Start/Continue' },
-    { '<F1>', function() require('dap').step_into() end, desc = 'Debug: Step Into' },
-    { '<F2>', function() require('dap').step_over() end, desc = 'Debug: Step Over' },
-    { '<F3>', function() require('dap').step_out() end, desc = 'Debug: Step Out' },
-    { '<leader>b', function() require('dap').toggle_breakpoint() end, desc = 'Debug: Toggle Breakpoint' },
-    { '<leader>B', function() require('dap').set_breakpoint(vim.fn.input 'Breakpoint condition: ') end, desc = 'Debug: Set Breakpoint' },
+    { '<F5>', dap_action('continue'), desc = 'Debug: Start/Continue' },
+    { '<F1>', dap_action('step_into'), desc = 'Debug: Step Into' },
+    { '<F2>', dap_action('step_over'), desc = 'Debug: Step Over' },
+    { '<F3>', dap_action('step_out'), desc = 'Debug: Step Out' },
+    { '<leader>b', dap_action('toggle_breakpoint'), desc = 'Debug: Toggle Breakpoint' },
+    { '<leader>B', set_breakpoint_condition, desc = 'Debug: Set Breakpoint' },
     -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
-    { '<F7>', function() require('dapui').toggle() end, desc = 'Debug: See last session result.' },
+    { '<F7>', toggle_dapui, desc = 'Debug: See last session result.' },
   },
   config = function()
     local dap = require 'dap'
     local dapui = require 'dapui'
+    local listener_key = 'dapui_config'
 
     require('mason-nvim-dap').setup {
       -- Makes a best effort to setup the various debuggers with
@@ -94,9 +109,15 @@ return {
     --   vim.fn.sign_define(tp, { text = icon, texthl = hl, numhl = hl })
     -- end
 
-    dap.listeners.after.event_initialized['dapui_config'] = dapui.open
-    dap.listeners.before.event_terminated['dapui_config'] = dapui.close
-    dap.listeners.before.event_exited['dapui_config'] = dapui.close
+    local listener_events = {
+      { phase = 'after', event = 'event_initialized', callback = dapui.open },
+      { phase = 'before', event = 'event_terminated', callback = dapui.close },
+      { phase = 'before', event = 'event_exited', callback = dapui.close },
+    }
+
+    for _, listener in ipairs(listener_events) do
+      dap.listeners[listener.phase][listener.event][listener_key] = listener.callback
+    end
 
     -- Install golang specific config
     require('dap-go').setup {
