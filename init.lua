@@ -921,24 +921,40 @@ require('lazy').setup({
 })
 
 -- Keybinds for moving line up or down with alt + j or k
-vim.keymap.set('n', '<A-j>', ':m .+1<CR>==', { silent = true })
-vim.keymap.set('n', '<A-k>', ':m .-2<CR>==', { silent = true })
+local function map_silent(mode, lhs, rhs, desc)
+  local opts = { silent = true }
+  if desc and desc ~= '' then
+    opts.desc = desc
+  end
+  vim.keymap.set(mode, lhs, rhs, opts)
+end
 
-vim.keymap.set('i', '<A-j>', '<Esc>:m .+1<CR>==gi', { silent = true })
-vim.keymap.set('i', '<A-k>', '<Esc>:m .-2<CR>==gi', { silent = true })
+local move_line_keymaps = {
+  { 'n', '<A-j>', ':m .+1<CR>==' },
+  { 'n', '<A-k>', ':m .-2<CR>==' },
+  { 'i', '<A-j>', '<Esc>:m .+1<CR>==gi' },
+  { 'i', '<A-k>', '<Esc>:m .-2<CR>==gi' },
+  { 'v', '<A-j>', ":m '>+1<CR>gv=gv" },
+  { 'v', '<A-k>', ":m '<-2<CR>gv=gv" },
+}
 
-vim.keymap.set('v', '<A-j>', ":m '>+1<CR>gv=gv", { silent = true })
-vim.keymap.set('v', '<A-k>', ":m '<-2<CR>gv=gv", { silent = true })
+for _, keymap in ipairs(move_line_keymaps) do
+  map_silent(keymap[1], keymap[2], keymap[3])
+end
 
 -- Duplicate current line / selection with alt + shift + arrow keys
-vim.keymap.set('n', '<A-S-Down>', ':t.<CR>==', { silent = true, desc = 'Duplicate line down' })
-vim.keymap.set('n', '<A-S-Up>', ':t-1<CR>==', { silent = true, desc = 'Duplicate line up' })
+local duplicate_keymaps = {
+  { 'n', '<A-S-Down>', ':t.<CR>==', 'Duplicate line down' },
+  { 'n', '<A-S-Up>', ':t-1<CR>==', 'Duplicate line up' },
+  { 'i', '<A-S-Down>', '<Esc>:t.<CR>==gi', 'Duplicate line down' },
+  { 'i', '<A-S-Up>', '<Esc>:t-1<CR>==gi', 'Duplicate line up' },
+  { 'v', '<A-S-Down>', ":t'><CR>gv=gv", 'Duplicate selection down' },
+  { 'v', '<A-S-Up>', ":t'<-1<CR>gv=gv", 'Duplicate selection up' },
+}
 
-vim.keymap.set('i', '<A-S-Down>', '<Esc>:t.<CR>==gi', { silent = true, desc = 'Duplicate line down' })
-vim.keymap.set('i', '<A-S-Up>', '<Esc>:t-1<CR>==gi', { silent = true, desc = 'Duplicate line up' })
-
-vim.keymap.set('v', '<A-S-Down>', ":t'><CR>gv=gv", { silent = true, desc = 'Duplicate selection down' })
-vim.keymap.set('v', '<A-S-Up>', ":t'<-1<CR>gv=gv", { silent = true, desc = 'Duplicate selection up' })
+for _, keymap in ipairs(duplicate_keymaps) do
+  map_silent(keymap[1], keymap[2], keymap[3], keymap[4])
+end
 
 local function set_quickfix_lines(title, lines, efm)
   local opts = {
@@ -977,6 +993,23 @@ local function get_current_file_context(prefix)
     source_base = source_base,
     input_file = source_dir .. '/input.txt',
   }
+end
+
+local function read_and_delete_file_lines(file_path)
+  if vim.fn.filereadable(file_path) ~= 1 then
+    return {}
+  end
+
+  local lines = vim.fn.readfile(file_path)
+  vim.fn.delete(file_path)
+  return lines
+end
+
+local function open_terminal_split(script, shell_cmd)
+  local shell = shell_cmd or 'sh -c'
+  vim.cmd.vsplit()
+  vim.cmd('terminal ' .. shell .. ' ' .. vim.fn.shellescape(script))
+  vim.cmd.startinsert()
 end
 
 local function compile_java_current_buffer(notify_success)
@@ -1019,11 +1052,7 @@ local function compile_java_current_buffer(notify_success)
   vim.fn.system(compile_cmd)
   local compile_exit = vim.v.shell_error
 
-  local lines = {}
-  if vim.fn.filereadable(compile_output) == 1 then
-    lines = vim.fn.readfile(compile_output)
-    vim.fn.delete(compile_output)
-  end
+  local lines = read_and_delete_file_lines(compile_output)
 
   if compile_exit ~= 0 then
     if #lines == 0 then
@@ -1066,9 +1095,7 @@ local function run_java_file()
   end
 
   local run_script = run_cmd .. '; code=$?; rm -rf ' .. vim.fn.shellescape(result.build_dir) .. '; exit $code'
-  vim.cmd.vsplit()
-  vim.cmd('terminal sh -c ' .. vim.fn.shellescape(run_script))
-  vim.cmd.startinsert()
+  open_terminal_split(run_script)
 end
 
 local function compile_java_file()
@@ -1186,9 +1213,7 @@ local function run_rust_cargo_target(cargo_root, ctx, bin_target)
   end
 
   local run_script = string.format('cd %s && %s', vim.fn.shellescape(cargo_root), run_cmd)
-  vim.cmd.vsplit()
-  vim.cmd('terminal sh -c ' .. vim.fn.shellescape(run_script))
-  vim.cmd.startinsert()
+  open_terminal_split(run_script)
 end
 
 local function run_rust_file()
@@ -1244,11 +1269,7 @@ local function run_rust_file()
   vim.fn.system(compile_cmd)
   local compile_exit = vim.v.shell_error
 
-  local lines = {}
-  if vim.fn.filereadable(compile_output) == 1 then
-    lines = vim.fn.readfile(compile_output)
-    vim.fn.delete(compile_output)
-  end
+  local lines = read_and_delete_file_lines(compile_output)
 
   if compile_exit ~= 0 then
     if #lines == 0 then
@@ -1269,9 +1290,7 @@ local function run_rust_file()
   end
 
   local run_script = run_cmd .. '; code=$?; rm -f ' .. vim.fn.shellescape(binary_path) .. '; exit $code'
-  vim.cmd.vsplit()
-  vim.cmd('terminal sh -c ' .. vim.fn.shellescape(run_script))
-  vim.cmd.startinsert()
+  open_terminal_split(run_script)
 end
 
 local function compile_rust_file()
@@ -1331,11 +1350,7 @@ local function compile_rust_file()
   vim.fn.system(compile_cmd)
   local compile_exit = vim.v.shell_error
 
-  local lines = {}
-  if vim.fn.filereadable(compile_output) == 1 then
-    lines = vim.fn.readfile(compile_output)
-    vim.fn.delete(compile_output)
-  end
+  local lines = read_and_delete_file_lines(compile_output)
 
   if compile_exit ~= 0 then
     if #lines == 0 then
@@ -1353,54 +1368,54 @@ local function compile_rust_file()
   vim.notify('RunRust: compilation successful.', vim.log.levels.INFO)
 end
 
+local function invoke_cp_action(action_name, error_message)
+  local ok, cp = pcall(require, 'custom.cp-config')
+  if not ok or not cp or type(cp[action_name]) ~= 'function' then
+    vim.notify(error_message, vim.log.levels.ERROR)
+    return
+  end
+
+  cp[action_name]()
+end
+
+local function dispatch_filetype_action(ft, action_map, unsupported_prefix)
+  local handler = action_map[ft]
+  if not handler then
+    vim.notify(unsupported_prefix .. ft, vim.log.levels.WARN)
+    return
+  end
+
+  handler()
+end
+
+local run_action_by_filetype = {
+  c = function()
+    invoke_cp_action('compile_and_run', 'R: could not load custom.cp-config compile runner.')
+  end,
+  cpp = function()
+    invoke_cp_action('compile_and_run', 'R: could not load custom.cp-config compile runner.')
+  end,
+  java = run_java_file,
+  rust = run_rust_file,
+}
+
+local compile_action_by_filetype = {
+  c = function()
+    invoke_cp_action('compile_only', 'RCompile: could not load custom.cp-config compiler.')
+  end,
+  cpp = function()
+    invoke_cp_action('compile_only', 'RCompile: could not load custom.cp-config compiler.')
+  end,
+  java = compile_java_file,
+  rust = compile_rust_file,
+}
+
 local function run_source_file()
-  local ft = vim.bo.filetype
-  if ft == 'cpp' or ft == 'c' then
-    local ok, cp = pcall(require, 'custom.cp-config')
-    if ok and cp and cp.compile_and_run then
-      cp.compile_and_run()
-    else
-      vim.notify('R: could not load custom.cp-config compile runner.', vim.log.levels.ERROR)
-    end
-    return
-  end
-
-  if ft == 'java' then
-    run_java_file()
-    return
-  end
-
-  if ft == 'rust' then
-    run_rust_file()
-    return
-  end
-
-  vim.notify('R: unsupported filetype: ' .. ft, vim.log.levels.WARN)
+  dispatch_filetype_action(vim.bo.filetype, run_action_by_filetype, 'R: unsupported filetype: ')
 end
 
 local function compile_source_file()
-  local ft = vim.bo.filetype
-  if ft == 'cpp' or ft == 'c' then
-    local ok, cp = pcall(require, 'custom.cp-config')
-    if ok and cp and cp.compile_only then
-      cp.compile_only()
-    else
-      vim.notify('RCompile: could not load custom.cp-config compiler.', vim.log.levels.ERROR)
-    end
-    return
-  end
-
-  if ft == 'java' then
-    compile_java_file()
-    return
-  end
-
-  if ft == 'rust' then
-    compile_rust_file()
-    return
-  end
-
-  vim.notify('RCompile: unsupported filetype: ' .. ft, vim.log.levels.WARN)
+  dispatch_filetype_action(vim.bo.filetype, compile_action_by_filetype, 'RCompile: unsupported filetype: ')
 end
 
 vim.api.nvim_create_autocmd('FileType', {
@@ -1408,16 +1423,23 @@ vim.api.nvim_create_autocmd('FileType', {
   pattern = 'rust',
   callback = function(event)
     local opts = { buffer = event.buf, silent = true }
+    local function map(mode, lhs, rhs, desc)
+      vim.keymap.set(mode, lhs, rhs, vim.tbl_extend('force', opts, { desc = desc }))
+    end
 
-    vim.keymap.set('n', '<F5>', run_source_file, vim.tbl_extend('force', opts, { desc = 'Run current Rust file/project (:R)' }))
-    vim.keymap.set('n', '<F9>', compile_source_file, vim.tbl_extend('force', opts, { desc = 'Compile/check Rust (:RCompile)' }))
-    vim.keymap.set('n', '<leader>cr', run_source_file, vim.tbl_extend('force', opts, { desc = '[C]ode [R]un (:R)' }))
-    vim.keymap.set('n', '<leader>cc', compile_source_file, vim.tbl_extend('force', opts, { desc = '[C]ode [C]ompile (:RCompile)' }))
+    map('n', '<F5>', run_source_file, 'Run current Rust file/project (:R)')
+    map('n', '<F9>', compile_source_file, 'Compile/check Rust (:RCompile)')
+    map('n', '<leader>cr', run_source_file, '[C]ode [R]un (:R)')
+    map('n', '<leader>cc', compile_source_file, '[C]ode [C]ompile (:RCompile)')
   end,
 })
 
-vim.api.nvim_create_user_command('R', run_source_file, { desc = 'Compile and run current C/C++/Java/Rust file' })
-vim.api.nvim_create_user_command('RCompile', compile_source_file, { desc = 'Compile/check current C/C++/Java/Rust file' })
+local function create_user_command(name, rhs, desc)
+  vim.api.nvim_create_user_command(name, rhs, { desc = desc })
+end
+
+create_user_command('R', run_source_file, 'Compile and run current C/C++/Java/Rust file')
+create_user_command('RCompile', compile_source_file, 'Compile/check current C/C++/Java/Rust file')
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=4 sts=4 sw=4 et
