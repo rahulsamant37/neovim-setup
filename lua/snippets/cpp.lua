@@ -1,9 +1,12 @@
 local ls = require 'luasnip'
 
 local ps = ls.parser.parse_snippet
+local function s(trig, dscr, body)
+    return ps({ trig = trig, dscr = dscr }, body)
+end
 
 return {
-  ps({ trig = 'cpfull', dscr = 'Full-featured C++ CP template with comprehensive debugging' }, [[
+    s('cpfull', 'Full-featured C++ CP template with comprehensive debugging', [[
 /*
 Author: Rahul Samant
 Created: $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE:$CURRENT_SECOND
@@ -352,7 +355,7 @@ int main() {
 }
   ]]),
 
-  ps({ trig = 'cpbasic', dscr = 'Minimal C++ CP template with basic debugging' }, [[
+    s('cpbasic', 'Minimal C++ CP template with basic debugging', [[
 /*
 Author: Rahul Samant
 Created: $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE:$CURRENT_SECOND
@@ -409,7 +412,7 @@ int main() {
 }
   ]]),
 
-  ps({ trig = 'cpa', dscr = 'Simple C++ CP template - no test-case loop, no solve(), just main with array input' }, [[
+    s('cpa', 'Simple C++ CP template - no test-case loop, no solve(), just main with array input', [[
 /*
 Author: Rahul Samant
 Created: $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE:$CURRENT_SECOND
@@ -458,7 +461,7 @@ int main() {
 }
   ]]),
 
-  ps({ trig = 'cpinter', dscr = 'Interactive C++ CP template with query debugging' }, [[
+    s('cpinter', 'Interactive C++ CP template with query debugging', [[
 /*
 Author: Rahul Samant
 Interactive Problem Template
@@ -525,7 +528,7 @@ int main() {
 }
   ]]),
 
-  ps({ trig = 'cpext', dscr = 'Extended C++ utilities with math, DSU, and debug' }, [[
+    s('cpext', 'Extended C++ utilities with math, DSU, and debug', [[
 /*
 Author: Rahul Samant
 Created: $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE:$CURRENT_SECOND
@@ -659,7 +662,7 @@ int main() {
 }
   ]]),
 
-  ps({ trig = 'basiccpp', dscr = 'Bare-bones C++ starter with just includes, two macros, and main' }, [[
+    s('basiccpp', 'Bare-bones C++ starter with just includes, two macros, and main', [[
 #include <bits/stdc++.h>
 using namespace std;
 
