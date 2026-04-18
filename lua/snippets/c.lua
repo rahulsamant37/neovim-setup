@@ -1,9 +1,12 @@
 local ls = require 'luasnip'
 
 local ps = ls.parser.parse_snippet
+local function s(trig, dscr, body)
+  return ps({ trig = trig, dscr = dscr }, body)
+end
 
 return {
-  ps({ trig = 'cpbasic', dscr = 'Minimal C CP template with basic debugging' }, [[
+  s('cpbasic', 'Minimal C CP template with basic debugging', [[
 /*
 Author: Rahul Samant
 Created: $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE:$CURRENT_SECOND
@@ -63,7 +66,7 @@ int main(void) {
 }
   ]]),
 
-  ps({ trig = 'cpa', dscr = 'Simple C CP template with single-case main' }, [[
+  s('cpa', 'Simple C CP template with single-case main', [[
 /*
 Author: Rahul Samant
 Created: $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE:$CURRENT_SECOND
@@ -105,7 +108,7 @@ int main(void) {
 }
   ]]),
 
-  ps({ trig = 'basicc', dscr = 'Bare-bones C starter' }, [[
+  s('basicc', 'Bare-bones C starter', [[
 #include <stdio.h>
 
 int main(void) {
