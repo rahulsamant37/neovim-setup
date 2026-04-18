@@ -22,12 +22,16 @@ return {
         api.toggle.linewise(vim.fn.visualmode())
       end
 
-      vim.keymap.set('n', '<C-_>', api.toggle.linewise.current, { desc = 'Toggle comment' })
-      vim.keymap.set('x', '<C-_>', toggle_visual_comment, { desc = 'Toggle comment selection' })
+      local function map(mode, lhs, rhs, desc)
+        vim.keymap.set(mode, lhs, rhs, { desc = desc })
+      end
 
       -- Some terminals send <C-/> and others send <C-_>, so map both.
-      vim.keymap.set('n', '<C-/>', api.toggle.linewise.current, { desc = 'Toggle comment' })
-      vim.keymap.set('x', '<C-/>', toggle_visual_comment, { desc = 'Toggle comment selection' })
+      local toggle_keys = { '<C-_>', '<C-/>' }
+      for _, key in ipairs(toggle_keys) do
+        map('n', key, api.toggle.linewise.current, 'Toggle comment')
+        map('x', key, toggle_visual_comment, 'Toggle comment selection')
+      end
     end,
   },
 }
