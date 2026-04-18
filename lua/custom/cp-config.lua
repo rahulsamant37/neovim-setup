@@ -18,6 +18,9 @@ local compile_modes = {
   },
 }
 
+local compile_mode_order = { 'fast', 'debug', 'submit' }
+local compile_mode_labels = table.concat(compile_mode_order, ', ')
+
 local c_compile_mode_flags = {
   fast = '-std=c17 -O2 -pipe -Wall -Wextra -Wshadow -Wconversion -DLOCAL',
   debug = '-std=c17 -O0 -g3 -Wall -Wextra -Wshadow -Wconversion -DLOCAL -fsanitize=address,undefined -fno-omit-frame-pointer',
@@ -117,7 +120,7 @@ end
 
 local function set_compile_mode(mode_name, silent)
   if not compile_modes[mode_name] then
-    vim.notify('Invalid CP mode: ' .. mode_name .. ' (use: fast, debug, submit)', vim.log.levels.ERROR)
+    vim.notify('Invalid CP mode: ' .. mode_name .. ' (use: ' .. compile_mode_labels .. ')', vim.log.levels.ERROR)
     return false
   end
 
@@ -139,16 +142,15 @@ local function set_compile_mode(mode_name, silent)
 end
 
 local function cycle_compile_mode()
-  local order = { 'fast', 'debug', 'submit' }
   local idx = 1
-  for i, name in ipairs(order) do
+  for i, name in ipairs(compile_mode_order) do
     if name == compile_mode then
       idx = i
       break
     end
   end
-  local next_idx = (idx % #order) + 1
-  set_compile_mode(order[next_idx])
+  local next_idx = (idx % #compile_mode_order) + 1
+  set_compile_mode(compile_mode_order[next_idx])
 end
 
 local function get_numbered_test_cases(source_dir)
@@ -199,6 +201,21 @@ local function get_expected_output_file(source_dir)
   end
 
   return nil
+end
+
+local function ensure_file_exists(file_path)
+  if vim.fn.filereadable(file_path) == 0 then
+    vim.fn.writefile({}, file_path)
+  end
+end
+
+local function sync_input_file(selected_input, input_file)
+  if not selected_input or selected_input == input_file then
+    return
+  end
+
+  local input_lines = vim.fn.readfile(selected_input)
+  vim.fn.writefile(input_lines, input_file)
 end
 
 local function set_quickfix_from_output(title, output)
@@ -345,15 +362,10 @@ local function compile_and_run_cpp()
   end
 
   local selected_input = get_primary_input_file(ctx.source_dir)
-  if selected_input and selected_input ~= ctx.input_file then
-    -- Keep LOCAL freopen("input.txt") templates working with inputN.txt tests.
-    local input_lines = vim.fn.readfile(selected_input)
-    vim.fn.writefile(input_lines, ctx.input_file)
-  end
+  -- Keep LOCAL freopen("input.txt") templates working with inputN.txt tests.
+  sync_input_file(selected_input, ctx.input_file)
 
-  if vim.fn.filereadable(ctx.output_file) == 0 then
-    vim.fn.writefile({}, ctx.output_file)
-  end
+  ensure_file_exists(ctx.output_file)
 
   local run_script = build_run_script(ctx.binary_path, selected_input, ctx.output_file)
   open_terminal_script(run_script)
@@ -394,14 +406,9 @@ local function run_with_input()
       cleanup_cmd = 'rm -f ' .. vim.fn.shellescape(temp_input)
     end
 
-    if selected_input ~= ctx.input_file then
-      local input_lines = vim.fn.readfile(selected_input)
-      vim.fn.writefile(input_lines, ctx.input_file)
-    end
+    sync_input_file(selected_input, ctx.input_file)
 
-    if vim.fn.filereadable(ctx.output_file) == 0 then
-      vim.fn.writefile({}, ctx.output_file)
-    end
+    ensure_file_exists(ctx.output_file)
 
     local run_script = build_run_script(ctx.binary_path, selected_input, ctx.output_file, cleanup_cmd)
     open_terminal_script(run_script)
@@ -411,7 +418,7 @@ local function run_with_input()
 end
 
 local function prompt_compile_mode()
-  vim.ui.select({ 'fast', 'debug', 'submit' }, { prompt = 'Select CP compile mode:' }, function(choice)
+  vim.ui.select(compile_mode_order, { prompt = 'Select CP compile mode:' }, function(choice)
     if choice then
       set_compile_mode(choice)
     end
@@ -469,12 +476,8 @@ local function create_test_files()
   local input_file = ctx.source_dir .. '/input' .. case_id .. '.txt'
   local expected_file = ctx.source_dir .. '/output' .. case_id .. '.txt'
 
-  if vim.fn.filereadable(input_file) == 0 then
-    vim.fn.writefile({}, input_file)
-  end
-  if vim.fn.filereadable(expected_file) == 0 then
-    vim.fn.writefile({}, expected_file)
-  end
+  ensure_file_exists(input_file)
+  ensure_file_exists(expected_file)
 
   vim.cmd('split ' .. vim.fn.fnameescape(input_file))
   vim.cmd('vsplit ' .. vim.fn.fnameescape(expected_file))
@@ -737,6 +740,19 @@ local function open_cpalg_file(relative_path)
   vim.cmd.edit(vim.fn.fnameescape(path))
 end
 
+local cpalg_docs = {
+  roadmap = 'essential_learning_path.md',
+  weekly_plan = 'essential_weekly_plan.md',
+  read_list = 'essential_read_first_order.txt',
+  revise_list = 'essential_revise_later_order.txt',
+}
+
+local function open_cpalg(relative_path)
+  return function()
+    open_cpalg_file(relative_path)
+  end
+end
+
 -- ==================== KEYBINDINGS ====================
 
 vim.api.nvim_create_autocmd('FileType', {
@@ -744,95 +760,96 @@ vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'cpp', 'c' },
   callback = function()
     local opts = { buffer = true, silent = true }
+    local function map(mode, lhs, rhs, desc)
+      vim.keymap.set(mode, lhs, rhs, vim.tbl_extend('force', opts, { desc = desc }))
+    end
 
     -- Compile and run
-    vim.keymap.set('n', '<F5>', compile_and_run_cpp, vim.tbl_extend('force', opts, { desc = 'Compile and Run' }))
-    vim.keymap.set('n', '<leader>cr', compile_and_run_cpp, vim.tbl_extend('force', opts, { desc = '[C]ompile and [R]un' }))
+    map('n', '<F5>', compile_and_run_cpp, 'Compile and Run')
+    map('n', '<leader>cr', compile_and_run_cpp, '[C]ompile and [R]un')
 
     -- Compile only
-    vim.keymap.set('n', '<F9>', compile_cpp, vim.tbl_extend('force', opts, { desc = 'Compile Only' }))
-    vim.keymap.set('n', '<leader>cc', compile_cpp, vim.tbl_extend('force', opts, { desc = '[C]ompile [C]heck' }))
+    map('n', '<F9>', compile_cpp, 'Compile Only')
+    map('n', '<leader>cc', compile_cpp, '[C]ompile [C]heck')
 
     -- Run with custom input
-    vim.keymap.set('n', '<F6>', run_with_input, vim.tbl_extend('force', opts, { desc = 'Run with Input' }))
-    vim.keymap.set('n', '<leader>ci', run_with_input, vim.tbl_extend('force', opts, { desc = '[C]ustom [I]nput' }))
-    vim.keymap.set('n', '<leader>r', run_interactive, vim.tbl_extend('force', opts, { desc = 'Run interactively (:CPRunInteractive)' }))
-    vim.keymap.set('n', '<F7>', run_interactive, vim.tbl_extend('force', opts, { desc = 'Run interactively (:CPRunInteractive)' }))
+    map('n', '<F6>', run_with_input, 'Run with Input')
+    map('n', '<leader>ci', run_with_input, '[C]ustom [I]nput')
+    map('n', '<leader>r', run_interactive, 'Run interactively (:CPRunInteractive)')
+    map('n', '<F7>', run_interactive, 'Run interactively (:CPRunInteractive)')
 
     -- Test file management
-    vim.keymap.set('n', '<leader>t', create_test_files, vim.tbl_extend('force', opts, { desc = '[T]est files' }))
-    vim.keymap.set('n', '<leader>ct', create_test_files, vim.tbl_extend('force', opts, { desc = '[C]reate [T]est files' }))
-    vim.keymap.set('n', '<leader>cd', compare_output, vim.tbl_extend('force', opts, { desc = '[C]ompare [D]iff' }))
-    vim.keymap.set('n', '<leader>x', clear_test_residue, vim.tbl_extend('force', opts, { desc = 'Delete CP artifacts (input*/output*/expected* + exe)' }))
+    map('n', '<leader>t', create_test_files, '[T]est files')
+    map('n', '<leader>ct', create_test_files, '[C]reate [T]est files')
+    map('n', '<leader>cd', compare_output, '[C]ompare [D]iff')
+    map('n', '<leader>x', clear_test_residue, 'Delete CP artifacts (input*/output*/expected* + exe)')
 
     -- New CP file and stress test
-    vim.keymap.set('n', '<leader>cn', new_cp_file, vim.tbl_extend('force', opts, { desc = '[C]reate [N]ew CP file' }))
-    vim.keymap.set('n', '<leader>cs', stress_test, vim.tbl_extend('force', opts, { desc = '[C]P [S]tress test' }))
+    map('n', '<leader>cn', new_cp_file, '[C]reate [N]ew CP file')
+    map('n', '<leader>cs', stress_test, '[C]P [S]tress test')
 
     -- Compile mode controls
-    vim.keymap.set('n', '<leader>cm', cycle_compile_mode, vim.tbl_extend('force', opts, { desc = '[C]ycle compile [M]ode' }))
-    vim.keymap.set('n', '<leader>cM', prompt_compile_mode, vim.tbl_extend('force', opts, { desc = 'Pick compile mode' }))
+    map('n', '<leader>cm', cycle_compile_mode, '[C]ycle compile [M]ode')
+    map('n', '<leader>cM', prompt_compile_mode, 'Pick compile mode')
 
     -- Quick snippet trigger in insert mode
-    vim.keymap.set('i', '<C-s>', function()
+    map('i', '<C-s>', function()
       local ok, luasnip = pcall(require, 'luasnip')
       if ok and luasnip.expand_or_jumpable() then
         luasnip.expand_or_jump()
       end
-    end, vim.tbl_extend('force', opts, { desc = 'Expand/jump snippet' }))
+    end, 'Expand/jump snippet')
   end,
 })
 
 -- Global keybinding
-vim.keymap.set('n', '<leader>cp', ':edit ~/.config/nvim/lua/custom/cp-config.lua<CR>', { desc = 'Edit [C][P] config' })
-vim.keymap.set('n', '<leader>ar', function()
-  open_cpalg_file('essential_learning_path.md')
-end, { desc = '[A]lgorithms [R]oadmap' })
-vim.keymap.set('n', '<leader>aw', function()
-  open_cpalg_file('essential_weekly_plan.md')
-end, { desc = '[A]lgorithms [W]eekly plan' })
-vim.keymap.set('n', '<leader>al', function()
-  open_cpalg_file('essential_read_first_order.txt')
-end, { desc = '[A]lgorithms [L]ist (read first)' })
-vim.keymap.set('n', '<leader>aL', function()
-  open_cpalg_file('essential_revise_later_order.txt')
-end, { desc = '[A]lgorithms revise [L]ist' })
+local function map_global(lhs, rhs, desc)
+  vim.keymap.set('n', lhs, rhs, { desc = desc })
+end
+
+local function create_command(name, rhs, desc_or_opts, opts)
+  local command_opts = {}
+
+  if type(desc_or_opts) == 'string' then
+    command_opts = vim.tbl_extend('force', { desc = desc_or_opts }, opts or {})
+  elseif type(desc_or_opts) == 'table' then
+    command_opts = desc_or_opts
+  end
+
+  vim.api.nvim_create_user_command(name, rhs, command_opts)
+end
+
+map_global('<leader>cp', ':edit ~/.config/nvim/lua/custom/cp-config.lua<CR>', 'Edit [C][P] config')
+map_global('<leader>ar', open_cpalg(cpalg_docs.roadmap), '[A]lgorithms [R]oadmap')
+map_global('<leader>aw', open_cpalg(cpalg_docs.weekly_plan), '[A]lgorithms [W]eekly plan')
+map_global('<leader>al', open_cpalg(cpalg_docs.read_list), '[A]lgorithms [L]ist (read first)')
+map_global('<leader>aL', open_cpalg(cpalg_docs.revise_list), '[A]lgorithms revise [L]ist')
 
 -- ==================== COMMANDS ====================
 
-vim.api.nvim_create_user_command('CPRun', compile_and_run_cpp, { desc = 'Compile and run C/C++ file' })
-vim.api.nvim_create_user_command('CPRunInteractive', run_interactive, { desc = 'Run compiled binary interactively (prompt for input; does NOT auto-use input1.txt)' })
-vim.api.nvim_create_user_command('CPCompile', compile_cpp, { desc = 'Compile C/C++ file' })
-vim.api.nvim_create_user_command('CPTest', create_test_files, { desc = 'Create/open test files' })
-vim.api.nvim_create_user_command('CPDiff', compare_output, { desc = 'Compare output.txt with expected output' })
-vim.api.nvim_create_user_command('CPClear', clear_test_residue, { desc = 'Delete CP artifacts (input*/output*/expected* + executable)' })
-vim.api.nvim_create_user_command('CPNew', new_cp_file, { desc = 'Create new C/C++ CP file from template' })
-vim.api.nvim_create_user_command('CPStress', stress_test, {
+create_command('CPRun', compile_and_run_cpp, 'Compile and run C/C++ file')
+create_command('CPRunInteractive', run_interactive, 'Run compiled binary interactively (prompt for input; does NOT auto-use input1.txt)')
+create_command('CPCompile', compile_cpp, 'Compile C/C++ file')
+create_command('CPTest', create_test_files, 'Create/open test files')
+create_command('CPDiff', compare_output, 'Compare output.txt with expected output')
+create_command('CPClear', clear_test_residue, 'Delete CP artifacts (input*/output*/expected* + executable)')
+create_command('CPNew', new_cp_file, 'Create new C/C++ CP file from template')
+create_command('CPStress', stress_test, 'Stress test: :CPStress [generator.c/cpp] [brute.c/cpp] [iterations]', {
   nargs = '*',
-  desc = 'Stress test: :CPStress [generator.c/cpp] [brute.c/cpp] [iterations]',
 })
-vim.api.nvim_create_user_command('CPMode', function(opts)
+create_command('CPMode', function(opts)
   set_compile_mode(vim.trim(opts.args))
-end, {
+end, 'Set compile mode: fast|debug|submit', {
   nargs = 1,
   complete = function()
-    return { 'fast', 'debug', 'submit' }
+    return compile_mode_order
   end,
-  desc = 'Set compile mode: fast|debug|submit',
 })
-vim.api.nvim_create_user_command('CPCycleMode', cycle_compile_mode, { desc = 'Cycle compile mode' })
-vim.api.nvim_create_user_command('CPARoadmap', function()
-  open_cpalg_file('essential_learning_path.md')
-end, { desc = 'Open CP-Algorithms essential roadmap' })
-vim.api.nvim_create_user_command('CPAWeeklyPlan', function()
-  open_cpalg_file('essential_weekly_plan.md')
-end, { desc = 'Open CP-Algorithms weekly plan' })
-vim.api.nvim_create_user_command('CPAReadList', function()
-  open_cpalg_file('essential_read_first_order.txt')
-end, { desc = 'Open CP-Algorithms read-first list' })
-vim.api.nvim_create_user_command('CPAReviseList', function()
-  open_cpalg_file('essential_revise_later_order.txt')
-end, { desc = 'Open CP-Algorithms revise-later list' })
+create_command('CPCycleMode', cycle_compile_mode, 'Cycle compile mode')
+create_command('CPARoadmap', open_cpalg(cpalg_docs.roadmap), 'Open CP-Algorithms essential roadmap')
+create_command('CPAWeeklyPlan', open_cpalg(cpalg_docs.weekly_plan), 'Open CP-Algorithms weekly plan')
+create_command('CPAReadList', open_cpalg(cpalg_docs.read_list), 'Open CP-Algorithms read-first list')
+create_command('CPAReviseList', open_cpalg(cpalg_docs.revise_list), 'Open CP-Algorithms revise-later list')
 
 -- ==================== AUTO-COMMANDS ====================
 
@@ -845,13 +862,8 @@ vim.api.nvim_create_autocmd('BufNewFile', {
     local input_file = source_dir .. '/input1.txt'
     local expected_file = source_dir .. '/output1.txt'
 
-    if vim.fn.filereadable(input_file) == 0 then
-      vim.fn.writefile({}, input_file)
-    end
-
-    if vim.fn.filereadable(expected_file) == 0 then
-      vim.fn.writefile({}, expected_file)
-    end
+    ensure_file_exists(input_file)
+    ensure_file_exists(expected_file)
   end,
 })
 
