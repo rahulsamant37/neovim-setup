@@ -66,64 +66,83 @@ local function new_note(path, title)
   vim.cmd.edit(vim.fn.fnameescape(fullpath))
 end
 
+local function run_telescope_picker(path, picker, opts)
+  if not ensure_dir(path) then
+    return
+  end
+
+  local builtin = telescope_builtin()
+  if not builtin then
+    return
+  end
+
+  local picker_fn = builtin[picker]
+  if type(picker_fn) ~= 'function' then
+    vim.notify('Telescope picker not available: ' .. picker, vim.log.levels.ERROR)
+    return
+  end
+
+  picker_fn(opts)
+end
+
 function M.setup()
   local path = quickref_dir()
 
-  local function open_files()
+  local function create_command(name, rhs, opts)
+    vim.api.nvim_create_user_command(name, rhs, opts)
+  end
+
+  local function map(mode, lhs, rhs, desc)
+    vim.keymap.set(mode, lhs, rhs, { desc = desc })
+  end
+
+  local function with_quickref_dir(callback)
     if not ensure_dir(path) then
       return
     end
-    local builtin = telescope_builtin()
-    if not builtin then
-      return
-    end
-    builtin.find_files {
+
+    callback()
+  end
+
+  local function open_files()
+    run_telescope_picker(path, 'find_files', {
       cwd = path,
       hidden = true,
       prompt_title = 'Quickref Files',
-    }
+    })
   end
 
   local function open_grep()
-    if not ensure_dir(path) then
-      return
-    end
-    local builtin = telescope_builtin()
-    if not builtin then
-      return
-    end
-    builtin.live_grep {
+    run_telescope_picker(path, 'live_grep', {
       cwd = path,
       prompt_title = 'Quickref Grep',
-    }
+    })
   end
 
-  vim.api.nvim_create_user_command('QuickrefFiles', open_files, { desc = 'Find files in quickref repo' })
-  vim.api.nvim_create_user_command('QuickrefGrep', open_grep, { desc = 'Search quickref repo' })
-  vim.api.nvim_create_user_command('QuickrefOpen', function()
-    if not ensure_dir(path) then
-      return
-    end
-    vim.cmd.edit(vim.fn.fnameescape(path .. '/README.md'))
+  create_command('QuickrefFiles', open_files, { desc = 'Find files in quickref repo' })
+  create_command('QuickrefGrep', open_grep, { desc = 'Search quickref repo' })
+  create_command('QuickrefOpen', function()
+    with_quickref_dir(function()
+      vim.cmd.edit(vim.fn.fnameescape(path .. '/README.md'))
+    end)
   end, { desc = 'Open quickref README' })
-  vim.api.nvim_create_user_command('QuickrefNew', function(opts)
-    if not ensure_dir(path) then
-      return
-    end
-    new_note(path, opts.args)
+  create_command('QuickrefNew', function(opts)
+    with_quickref_dir(function()
+      new_note(path, opts.args)
+    end)
   end, { desc = 'Create quickref note', nargs = '*' })
 
-  vim.keymap.set('n', '<leader>sq', open_files, { desc = '[S]earch [Q]uickref files' })
-  vim.keymap.set('n', '<leader>sQ', open_grep, { desc = '[S]earch [Q]uickref grep' })
-  vim.keymap.set('n', '<leader>qo', '<cmd>QuickrefOpen<CR>', { desc = '[Q]uickref [O]pen' })
-  vim.keymap.set('n', '<leader>qn', function()
+  map('n', '<leader>sq', open_files, '[S]earch [Q]uickref files')
+  map('n', '<leader>sQ', open_grep, '[S]earch [Q]uickref grep')
+  map('n', '<leader>qo', '<cmd>QuickrefOpen<CR>', '[Q]uickref [O]pen')
+  map('n', '<leader>qn', function()
     vim.ui.input({ prompt = 'Quickref note title: ' }, function(input)
       if input == nil then
         return
       end
       new_note(path, input)
     end)
-  end, { desc = '[Q]uickref [N]ew note' })
+  end, '[Q]uickref [N]ew note')
 end
 
 return M
