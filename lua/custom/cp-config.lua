@@ -820,20 +820,38 @@ local function create_command(name, rhs, desc_or_opts, opts)
 end
 
 map_global('<leader>cp', ':edit ~/.config/nvim/lua/custom/cp-config.lua<CR>', 'Edit [C][P] config')
-map_global('<leader>ar', open_cpalg(cpalg_docs.roadmap), '[A]lgorithms [R]oadmap')
-map_global('<leader>aw', open_cpalg(cpalg_docs.weekly_plan), '[A]lgorithms [W]eekly plan')
-map_global('<leader>al', open_cpalg(cpalg_docs.read_list), '[A]lgorithms [L]ist (read first)')
-map_global('<leader>aL', open_cpalg(cpalg_docs.revise_list), '[A]lgorithms revise [L]ist')
+
+local cpalg_keymap_specs = {
+  { '<leader>ar', cpalg_docs.roadmap, '[A]lgorithms [R]oadmap' },
+  { '<leader>aw', cpalg_docs.weekly_plan, '[A]lgorithms [W]eekly plan' },
+  { '<leader>al', cpalg_docs.read_list, '[A]lgorithms [L]ist (read first)' },
+  { '<leader>aL', cpalg_docs.revise_list, '[A]lgorithms revise [L]ist' },
+}
+
+for _, keymap in ipairs(cpalg_keymap_specs) do
+  map_global(keymap[1], open_cpalg(keymap[2]), keymap[3])
+end
 
 -- ==================== COMMANDS ====================
 
-create_command('CPRun', compile_and_run_cpp, 'Compile and run C/C++ file')
-create_command('CPRunInteractive', run_interactive, 'Run compiled binary interactively (prompt for input; does NOT auto-use input1.txt)')
-create_command('CPCompile', compile_cpp, 'Compile C/C++ file')
-create_command('CPTest', create_test_files, 'Create/open test files')
-create_command('CPDiff', compare_output, 'Compare output.txt with expected output')
-create_command('CPClear', clear_test_residue, 'Delete CP artifacts (input*/output*/expected* + executable)')
-create_command('CPNew', new_cp_file, 'Create new C/C++ CP file from template')
+local cp_command_specs = {
+  { 'CPRun', compile_and_run_cpp, 'Compile and run C/C++ file' },
+  {
+    'CPRunInteractive',
+    run_interactive,
+    'Run compiled binary interactively (prompt for input; does NOT auto-use input1.txt)',
+  },
+  { 'CPCompile', compile_cpp, 'Compile C/C++ file' },
+  { 'CPTest', create_test_files, 'Create/open test files' },
+  { 'CPDiff', compare_output, 'Compare output.txt with expected output' },
+  { 'CPClear', clear_test_residue, 'Delete CP artifacts (input*/output*/expected* + executable)' },
+  { 'CPNew', new_cp_file, 'Create new C/C++ CP file from template' },
+}
+
+for _, command in ipairs(cp_command_specs) do
+  create_command(command[1], command[2], command[3])
+end
+
 create_command('CPStress', stress_test, 'Stress test: :CPStress [generator.c/cpp] [brute.c/cpp] [iterations]', {
   nargs = '*',
 })
@@ -846,10 +864,17 @@ end, 'Set compile mode: fast|debug|submit', {
   end,
 })
 create_command('CPCycleMode', cycle_compile_mode, 'Cycle compile mode')
-create_command('CPARoadmap', open_cpalg(cpalg_docs.roadmap), 'Open CP-Algorithms essential roadmap')
-create_command('CPAWeeklyPlan', open_cpalg(cpalg_docs.weekly_plan), 'Open CP-Algorithms weekly plan')
-create_command('CPAReadList', open_cpalg(cpalg_docs.read_list), 'Open CP-Algorithms read-first list')
-create_command('CPAReviseList', open_cpalg(cpalg_docs.revise_list), 'Open CP-Algorithms revise-later list')
+
+local cpalg_command_specs = {
+  { 'CPARoadmap', cpalg_docs.roadmap, 'Open CP-Algorithms essential roadmap' },
+  { 'CPAWeeklyPlan', cpalg_docs.weekly_plan, 'Open CP-Algorithms weekly plan' },
+  { 'CPAReadList', cpalg_docs.read_list, 'Open CP-Algorithms read-first list' },
+  { 'CPAReviseList', cpalg_docs.revise_list, 'Open CP-Algorithms revise-later list' },
+}
+
+for _, command in ipairs(cpalg_command_specs) do
+  create_command(command[1], open_cpalg(command[2]), command[3])
+end
 
 -- ==================== AUTO-COMMANDS ====================
 
