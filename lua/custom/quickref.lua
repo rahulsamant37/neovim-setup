@@ -119,30 +119,48 @@ function M.setup()
     })
   end
 
-  create_command('QuickrefFiles', open_files, { desc = 'Find files in quickref repo' })
-  create_command('QuickrefGrep', open_grep, { desc = 'Search quickref repo' })
-  create_command('QuickrefOpen', function()
+  local function open_readme()
     with_quickref_dir(function()
       vim.cmd.edit(vim.fn.fnameescape(path .. '/README.md'))
     end)
-  end, { desc = 'Open quickref README' })
-  create_command('QuickrefNew', function(opts)
+  end
+
+  local function create_note_from_args(opts)
     with_quickref_dir(function()
       new_note(path, opts.args)
     end)
-  end, { desc = 'Create quickref note', nargs = '*' })
+  end
 
-  map('n', '<leader>sq', open_files, '[S]earch [Q]uickref files')
-  map('n', '<leader>sQ', open_grep, '[S]earch [Q]uickref grep')
-  map('n', '<leader>qo', '<cmd>QuickrefOpen<CR>', '[Q]uickref [O]pen')
-  map('n', '<leader>qn', function()
+  local function prompt_new_note()
     vim.ui.input({ prompt = 'Quickref note title: ' }, function(input)
       if input == nil then
         return
       end
       new_note(path, input)
     end)
-  end, '[Q]uickref [N]ew note')
+  end
+
+  local command_specs = {
+    { 'QuickrefFiles', open_files, { desc = 'Find files in quickref repo' } },
+    { 'QuickrefGrep', open_grep, { desc = 'Search quickref repo' } },
+    { 'QuickrefOpen', open_readme, { desc = 'Open quickref README' } },
+    { 'QuickrefNew', create_note_from_args, { desc = 'Create quickref note', nargs = '*' } },
+  }
+
+  for _, command in ipairs(command_specs) do
+    create_command(command[1], command[2], command[3])
+  end
+
+  local keymap_specs = {
+    { 'n', '<leader>sq', open_files, '[S]earch [Q]uickref files' },
+    { 'n', '<leader>sQ', open_grep, '[S]earch [Q]uickref grep' },
+    { 'n', '<leader>qo', '<cmd>QuickrefOpen<CR>', '[Q]uickref [O]pen' },
+    { 'n', '<leader>qn', prompt_new_note, '[Q]uickref [N]ew note' },
+  }
+
+  for _, keymap in ipairs(keymap_specs) do
+    map(keymap[1], keymap[2], keymap[3], keymap[4])
+  end
 end
 
 return M
