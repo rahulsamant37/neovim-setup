@@ -1388,24 +1388,22 @@ local function dispatch_filetype_action(ft, action_map, unsupported_prefix)
   handler()
 end
 
+local function cp_action_handler(action_name, error_message)
+  return function()
+    invoke_cp_action(action_name, error_message)
+  end
+end
+
 local run_action_by_filetype = {
-  c = function()
-    invoke_cp_action('compile_and_run', 'R: could not load custom.cp-config compile runner.')
-  end,
-  cpp = function()
-    invoke_cp_action('compile_and_run', 'R: could not load custom.cp-config compile runner.')
-  end,
+  c = cp_action_handler('compile_and_run', 'R: could not load custom.cp-config compile runner.'),
+  cpp = cp_action_handler('compile_and_run', 'R: could not load custom.cp-config compile runner.'),
   java = run_java_file,
   rust = run_rust_file,
 }
 
 local compile_action_by_filetype = {
-  c = function()
-    invoke_cp_action('compile_only', 'RCompile: could not load custom.cp-config compiler.')
-  end,
-  cpp = function()
-    invoke_cp_action('compile_only', 'RCompile: could not load custom.cp-config compiler.')
-  end,
+  c = cp_action_handler('compile_only', 'RCompile: could not load custom.cp-config compiler.'),
+  cpp = cp_action_handler('compile_only', 'RCompile: could not load custom.cp-config compiler.'),
   java = compile_java_file,
   rust = compile_rust_file,
 }
