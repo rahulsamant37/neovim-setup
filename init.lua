@@ -733,6 +733,9 @@ require('lazy').setup({
         -- See :h blink-cmp-config-keymap for defining your own keymap
         preset = 'super-tab',
 
+        -- Accept completion with Enter; fallback preserves existing <CR> mappings.
+        ['<CR>'] = { 'accept', 'fallback' },
+
         -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
         --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
       },
