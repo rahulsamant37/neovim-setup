@@ -130,11 +130,12 @@ Why split across Telescope and native LSP actions:
 | V | `<A-S-Down>` | Duplicate selection down |
 | V | `<A-S-Up>` | Duplicate selection up |
 
-### Smart brace expansion
+### Completion and Smart Enter
 
 | Mode | Key | Action |
 | --- | --- | --- |
-| I | `<CR>` | If cursor is between `{}`: create new indented line block |
+| I | `<Tab>` | Accept selected completion item |
+| I | `<CR>` | Accept selected completion item; otherwise, if cursor is between `{}`: create new indented line block |
 
 Why this exists: writing C/C++ blocks becomes faster with fewer manual edits.
 
