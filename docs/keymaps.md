@@ -148,6 +148,15 @@ Why this exists: writing C/C++ blocks becomes faster with fewer manual edits.
 
 Note: terminals differ in how they send Ctrl-slash, so both mappings are included.
 
+## Quickref Notes
+
+| Mode | Key | Action |
+| --- | --- | --- |
+| N | `<leader>sq` | Search Quickref files |
+| N | `<leader>sQ` | Live grep in Quickref notes |
+| N | `<leader>qo` | Open Quickref README |
+| N | `<leader>qn` | Create a new Quickref note |
+
 ## Competitive Programming Keymaps (C/C++ Buffers)
 
 These mappings are filetype-local for `c` and `cpp` buffers.
@@ -176,7 +185,11 @@ Global helper mapping:
 
 | Mode | Key | Action |
 | --- | --- | --- |
-| N | `<leader>cp` | Open CP config file |
+| N | `<leader>cp` | Open CP plugin config file (`lua/custom/plugins/cp.lua`) |
+| N | `<leader>ar` | Open CP-Algorithms Roadmap |
+| N | `<leader>aw` | Open CP-Algorithms Weekly Plan |
+| N | `<leader>al` | Open CP-Algorithms Read-first List |
+| N | `<leader>aL` | Open CP-Algorithms Revise List |
 
 ### CP keymap example
 
@@ -218,3 +231,7 @@ Rust run behavior:
 | `:CPCycleMode` | Cycle compile mode |
 | `:R` | Compile and run current C/C++/Java/Rust file |
 | `:RCompile` | Compile/check current C/C++/Java/Rust file |
+| `:QuickrefFiles` | Find files in quickref repo |
+| `:QuickrefGrep` | Search quickref repo |
+| `:QuickrefOpen` | Open quickref README |
+| `:QuickrefNew` | Create a quickref note |
