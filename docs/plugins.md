@@ -24,7 +24,7 @@ Why this structure is useful:
 | `nvim-telescope/telescope-fzf-native.nvim` | Faster Telescope sorting | Telescope deps | Built only if `make` exists |
 | `nvim-telescope/telescope-ui-select.nvim` | Better UI for selections | Telescope deps | Integrates with Telescope themes |
 | `nvim-tree/nvim-web-devicons` | File icons | Telescope deps | Enabled only if Nerd Font is enabled |
-| `neovim/nvim-lspconfig` | LSP client configuration | `init.lua`, `lua/custom/plugins/cp-setup.lua` | Core LSP + custom `clangd` tuning |
+| `neovim/nvim-lspconfig` | LSP client configuration | `init.lua`, `lua/custom/plugins/cp.lua` | Core LSP + custom `clangd` tuning |
 | `j-hui/fidget.nvim` | LSP progress UI | LSP dependency | Lightweight status updates |
 | `stevearc/conform.nvim` | Formatting framework | `init.lua` | `<leader>f` formatter entry point |
 | `saghen/blink.cmp` | Completion engine | `init.lua` | Completion sources: LSP, path, snippets |
@@ -102,6 +102,6 @@ Why use this approach: optional modules stay versioned and ready, but do not add
 
 ## Notes for CP Users
 
-- `neovim/nvim-lspconfig` is extended in `lua/custom/plugins/cp-setup.lua` to configure `clangd` with C/C++-friendly defaults.
+- `neovim/nvim-lspconfig` is extended in `lua/custom/plugins/cp.lua` to configure `clangd` with C/C++-friendly defaults.
 - Formatting for C/C++ is routed through `conform.nvim` and `clang-format` for predictable style output.
 - Snippet templates are powered by `LuaSnip` and loaded from `lua/snippets/c.lua` and `lua/snippets/cpp.lua`.
