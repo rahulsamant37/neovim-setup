@@ -23,10 +23,13 @@ Why this is effective:
 ├── lazy-lock.json
 ├── lua
 │   ├── custom
-│   │   ├── cp-config.lua
+│   │   ├── cp
+│   │   │   └── init.lua (and other CP modules)
 │   │   └── plugins
-│   │       ├── cp-setup.lua
-│   │       └── init.lua
+│   │       ├── cp.lua
+│   │       ├── init.lua
+│   │       ├── quickref.lua
+│   │       └── rust.lua
 │   ├── kickstart
 │   │   ├── health.lua
 │   │   └── plugins
@@ -47,9 +50,10 @@ Why this is effective:
 | File | What it controls | Why it exists |
 | --- | --- | --- |
 | `init.lua` | Global options, keymaps, plugin manager bootstrap, main plugin specs | Single entry point that keeps startup behavior easy to trace |
-| `lua/custom/cp-config.lua` | C/C++ compile/run/test/stress workflow, CP commands, CP keymaps | Keeps domain-specific workflow out of general editor config |
+| `lua/custom/cp/` | C/C++ compile/run/test/stress workflow logic | Keeps domain-specific workflow modular and out of general editor config |
+| `lua/custom/plugins/cp.lua` | `clangd` customization, CP keymaps, and commands | Wires up the CP workflow and keeps CP tuning separate from general LSP setup |
 | `lua/custom/plugins/init.lua` | Personal plugin additions (Fugitive, Comment.nvim) | Clean extension area with low merge conflict risk |
-| `lua/custom/plugins/cp-setup.lua` | `clangd` customization for C/C++ | Keeps CP/LSP tuning separate from general LSP setup |
+| `lua/custom/plugins/quickref.lua` | Quickref knowledge base integration | Terminal-native fast note capture and search |
 | `lua/snippets/c.lua` + `lua/snippets/cpp.lua` | C/C++ snippet templates (`cpbasic`, `cpa`, `cpfull`, etc.) | Fast contest/problem boilerplate generation |
 | `lua/kickstart/health.lua` | Health checks for dependencies | Easier diagnostics via `:checkhealth` |
 | `lua/kickstart/plugins/*.lua` | Optional plugin modules | Turn features on/off without deleting code |
@@ -98,7 +102,7 @@ Why import from `custom.plugins`:
 
 ## Competitive Programming Configuration
 
-`lua/custom/cp-config.lua` provides:
+`lua/custom/cp/init.lua` and its submodules provide:
 
 - Compile modes: `fast`, `debug`, `submit`
 - Commands: `:CPRun`, `:CPCompile`, `:CPTest`, `:CPDiff`, `:CPClear`, `:CPNew`, `:CPStress`, `:CPMode`, `:CPCycleMode`
@@ -122,7 +126,7 @@ Example:
 ### LSP
 
 - Base LSP behavior is in `init.lua`
-- `clangd` is customized in `lua/custom/plugins/cp-setup.lua`
+- `clangd` is customized in `lua/custom/plugins/cp.lua`
 
 The `clangd` setup includes flags for:
 
@@ -178,6 +182,6 @@ When Neovim starts:
 1. `init.lua` sets options/keymaps
 2. `lazy.nvim` bootstraps and loads plugin specs
 3. Optional runtime events attach LSP and filetype-local keymaps
-4. `custom.cp-config` is loaded to register CP workflows
+4. `custom.plugins.cp` is loaded to register CP workflows and LSP
 
 Understanding this flow helps debug startup issues faster.
