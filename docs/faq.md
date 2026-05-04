@@ -32,8 +32,9 @@ Why: `NVIM_APPNAME` lets you run multiple isolated Neovim configs.
 Start with:
 
 1. `init.lua`
-2. `lua/custom/cp-config.lua`
-3. `lua/custom/plugins/`
+2. `lua/custom/cp/init.lua`
+3. `lua/custom/plugins/cp.lua`
+4. `lua/custom/plugins/`
 
 This gives you the startup flow, CP workflow, and custom plugin layer.
 
