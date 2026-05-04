@@ -123,10 +123,10 @@ end, { desc = '[T]oggle [L]istchars' })
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- TIP: Disable arrow keys in normal mode
-vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
-vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
-vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
-vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+-- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
+-- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
+-- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
+-- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
@@ -1375,7 +1375,7 @@ local function compile_rust_file()
 end
 
 local function invoke_cp_action(action_name, error_message)
-  local ok, cp = pcall(require, 'custom.cp-config')
+  local ok, cp = pcall(require, 'custom.plugins.cp')
   if not ok or not cp or type(cp[action_name]) ~= 'function' then
     vim.notify(error_message, vim.log.levels.ERROR)
     return
@@ -1401,15 +1401,15 @@ local function cp_action_handler(action_name, error_message)
 end
 
 local run_action_by_filetype = {
-  c = cp_action_handler('compile_and_run', 'R: could not load custom.cp-config compile runner.'),
-  cpp = cp_action_handler('compile_and_run', 'R: could not load custom.cp-config compile runner.'),
+  c = cp_action_handler('compile_and_run', 'R: could not load custom.plugins.cp compile runner.'),
+  cpp = cp_action_handler('compile_and_run', 'R: could not load custom.plugins.cp compile runner.'),
   java = run_java_file,
   rust = run_rust_file,
 }
 
 local compile_action_by_filetype = {
-  c = cp_action_handler('compile_only', 'RCompile: could not load custom.cp-config compiler.'),
-  cpp = cp_action_handler('compile_only', 'RCompile: could not load custom.cp-config compiler.'),
+  c = cp_action_handler('compile_only', 'RCompile: could not load custom.plugins.cp compiler.'),
+  cpp = cp_action_handler('compile_only', 'RCompile: could not load custom.plugins.cp compiler.'),
   java = compile_java_file,
   rust = compile_rust_file,
 }
@@ -1454,8 +1454,4 @@ vim.o.expandtab = true  -- use spaces instead of tabs
 
 vim.keymap.set("n", "<leader>-", vim.cmd.Ex)
 
--- Load quickref integration
-require('custom.quickref').setup()
-
--- Load Competitive Programming configuration
-require('custom.cp-config')
+-- quickref and cp config are now auto-loaded via { import = 'custom.plugins' }
