@@ -6,7 +6,7 @@ This guide shows how to safely adapt this Neovim setup to your own workflow with
 
 1. Keep core behavior stable in `init.lua`.
 2. Add personal plugins in `lua/custom/plugins/`.
-3. Keep language/workflow-specific logic isolated (as done with `cp-config.lua`).
+3. Keep language/workflow-specific logic isolated (as done with the `lua/custom/cp/` modules and `lua/custom/plugins/cp.lua`).
 
 Why this works: clean boundaries reduce breakage when updating your config.
 
@@ -119,7 +119,7 @@ Why filetype-local mappings are better: they prevent global keymap overload.
 
 ## 5) Customize Competitive Programming Compile Modes
 
-Compile mode flags live in `lua/custom/cp-config.lua` inside `compile_modes`.
+Compile mode flags live in `lua/custom/cp/config.lua` inside `compile_modes`.
 
 Example: add extra warning flags to `fast` mode:
 
@@ -159,7 +159,7 @@ Why snippets are powerful here: they reduce contest startup time and keep your b
 
 ## 7) Customize `clangd` Behavior
 
-Edit `lua/custom/plugins/cp-setup.lua`.
+Edit `lua/custom/plugins/cp.lua`.
 
 Example: add a compile commands directory hint:
 
