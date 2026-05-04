@@ -213,26 +213,59 @@ Available C++ snippet triggers in lua/snippets/cpp.lua:
 ├── init.lua
 ├── lazy-lock.json
 ├── README.md
-└── lua
-    ├── custom
-    │   ├── cp-config.lua
-    │   └── plugins
-    │       ├── cp-setup.lua
-    │       └── init.lua
-    ├── kickstart
-    │   ├── health.lua
-    │   └── plugins
-    └── snippets
-        ├── c.lua
-        └── cpp.lua
+├── lua
+│   ├── custom
+│   │   ├── cp
+│   │   │   ├── init.lua         — Public API entry point
+│   │   │   ├── config.lua       — Compile modes, flags, constants
+│   │   │   ├── compiler.lua     — Compile profiles and compilation
+│   │   │   ├── runner.lua       — Build/run, interactive, new file
+│   │   │   ├── testcase.lua     — Test file management
+│   │   │   ├── stress.lua       — Stress testing
+│   │   │   ├── cpalg.lua        — CP-Algorithms doc shortcuts
+│   │   │   └── utils.lua        — Shared helper functions
+│   │   └── plugins
+│   │       ├── cp.lua           — Keymaps, commands, autocmds (wiring)
+│   │       ├── init.lua         — Personal plugin list
+│   │       ├── quickref.lua     — Quickref integration
+│   │       └── rust.lua         — Rust development setup
+│   ├── kickstart
+│   │   ├── health.lua
+│   │   └── plugins
+│   └── snippets
+│       ├── c.lua
+│       └── cpp.lua
+└── tests
+    ├── run_tests.sh             — Test runner script
+    ├── test_helper.lua          — Minimal assertion library
+    └── cp
+        ├── config_test.lua
+        ├── compiler_test.lua
+        ├── testcase_test.lua
+        └── utils_test.lua
+```
+
+## Running Tests
+
+Run all tests:
+
+```bash
+bash tests/run_tests.sh
+```
+
+Run a single test file:
+
+```bash
+nvim --headless --noplugin -u NONE -l tests/cp/config_test.lua
 ```
 
 ## Customization
 
 - init.lua: global options, keymaps, and plugin bootstrap
-- lua/custom/cp-config.lua: CP functions and keymaps
+- lua/custom/cp/: CP workflow modules (config, compiler, runner, testcase, stress, cpalg, utils)
+- lua/custom/plugins/cp.lua: CP keymaps, commands, and autocmds
 - lua/custom/plugins/init.lua: personal plugin list
-- lua/custom/plugins/cp-setup.lua: C/C++ LSP/treesitter settings
+- lua/custom/plugins/rust.lua: Rust development setup
 - lua/snippets/c.lua and lua/snippets/cpp.lua: C/C++ templates/snippets
 
 ## Optional: Run in Parallel with Existing Neovim Config
