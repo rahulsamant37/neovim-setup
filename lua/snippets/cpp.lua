@@ -394,10 +394,6 @@ void setup_io() {
 }
 
 void solve() {
-    int n;
-    cin >> n;
-    vi arr(n);
-    rep(i, 0, n) cin >> arr[i];
     $0
 }
 
@@ -452,10 +448,6 @@ void setup_io() {
 
 int main() {
     setup_io();
-    int n;
-    cin >> n;
-    vi arr(n);
-    rep(i, 0, n) cin >> arr[i];
     $0
     return 0;
 }
@@ -669,8 +661,6 @@ using namespace std;
 #define endl '\n'
 
 int main() {
-    int n;
-    cin >> n;
     $0
     return 0;
 }
